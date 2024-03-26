@@ -12,7 +12,7 @@ def parseMap():
 
 def main():
     map = parseMap()
-    env = Environment(map)
+    env = Environment(map, policy = Environment.bellman)
     env.learn(1000, .1, .1, .1)
     print(env.getBestMap())
 

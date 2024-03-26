@@ -20,6 +20,9 @@ class Environment:
          3: '→',
     }
 
+    epsgreedy = 'epsgreedy'
+    bellman = 'bellman'
+
     map : list[list[str]]
 
     start : State
@@ -35,12 +38,16 @@ class Environment:
     R : numpy.ndarray # N × M → float
     Q : numpy.ndarray # N × M × dir → float
 
-    def __init__(self, map):
+    policy : str
+
+    def __init__(self, map, policy = None):
         self.parseMap(map)
 
         self.Q = numpy.random.rand(self.N, self.M, len(self.dirs))
         self.Q[self.invalids] = numpy.nan
         self.Q[self.end] = numpy.zeros(len(self.dirs))
+
+        self.policy = policy or Environment.epsgreedy
 
     def parseMap(self, map):
         self.map = map
@@ -100,12 +107,25 @@ class Environment:
             else:
                 self.invalids[y, x, dir] = True
 
+    def getEpsGreedy(self, q, epsilon):
+        max_a = numpy.nanargmax(q)
+        rand_a = numpy.random.choice(numpy.arange(len(self.dirs))[~numpy.isnan(q)])
+        return numpy.random.choice([max_a, rand_a], p = [epsilon, 1 - epsilon])
+
+    def getBellman(self, q):
+        p = numpy.nan_to_num(q, nan = 0)
+        return numpy.random.choice(numpy.arange(len(self.dirs)), p = p / p.sum())
+
     def run(self, alpha : float, gamma : float, epsilon : float) -> numpy.ndarray:
         s = self.start
         while s != self.end:
-            max_a = numpy.nanargmax(self.Q[s])
-            rand_a = numpy.random.choice(numpy.arange(0, len(self.dirs))[~numpy.isnan(self.Q[s])])
-            a = numpy.random.choice([max_a, rand_a], p = [epsilon, 1 - epsilon])
+            match self.policy:
+                case Environment.epsgreedy:
+                    a = self.getEpsGreedy(self.Q[s], epsilon)
+                case Environment.bellman:
+                    a = self.getBellman(self.Q[s])
+                case _:
+                    raise ValueError(f'Unknown policy {self.policy}')
 
             sp = self.transitions[s][a]
             r = self.R[sp]
@@ -122,12 +142,9 @@ class Environment:
 
     def getBestMap(self):
         dirs = numpy.argmax(numpy.nan_to_num(self.Q, nan = float('-inf')), axis = 2)
-        # verb = numpy.vectorize(self.names.__getitem__)
-        # bestMap = numpy.where(self.obstacles, 'x', verb(dirs))
-        # bestMap[self.end] = 'e'
 
         bestMap = numpy.where(self.obstacles, 'x', ' ')
-        bestMap[self.end] = 'e'
+        bestMap[self.end] = '✗'
 
         maps = []
 
@@ -142,7 +159,6 @@ class Environment:
             y -= self.dirs[d][0]
             x -= self.dirs[d][1]
             bestMap[y, x] = '●'
-            bestMap[self.end] = '✗'
             maps.append(bestMap.copy())
 
         return numpy.array(maps)
