@@ -14,7 +14,6 @@ class Environment:
         3: ( 0,  1),
     }
     names = {
-        -1: 'x',
          0: '↑',
          1: '↓',
          2: '←',
@@ -101,7 +100,7 @@ class Environment:
             else:
                 self.invalids[y, x, dir] = True
 
-    def run(self, alpha : float, gamma : float, epsilon : float) -> float:
+    def run(self, alpha : float, gamma : float, epsilon : float) -> numpy.ndarray:
         s = self.start
         while s != self.end:
             max_a = numpy.nanargmax(self.Q[s])
@@ -115,9 +114,35 @@ class Environment:
 
         return self.Q
 
-    def learn(self, epochs : int, alpha : float, gamma : float, epsilon : float) -> float:
+    def learn(self, epochs : int, alpha : float, gamma : float, epsilon : float):
         for epoch in range(1, epochs + 1):
             old_Q = self.Q.copy()
             self.run(alpha, gamma, epsilon)
             diff = numpy.mean(dropNaN(numpy.abs(old_Q - self.Q)))
-            # print(f'Epoch {epoch:3d}/{epochs}:\t{diff:g}')
+
+    def getBestMap(self):
+        dirs = numpy.argmax(numpy.nan_to_num(self.Q, nan = float('-inf')), axis = 2)
+        # verb = numpy.vectorize(self.names.__getitem__)
+        # bestMap = numpy.where(self.obstacles, 'x', verb(dirs))
+        # bestMap[self.end] = 'e'
+
+        bestMap = numpy.where(self.obstacles, 'x', ' ')
+        bestMap[self.end] = 'e'
+
+        maps = []
+
+        y, x = self.start
+        while (y, x) != self.end:
+            d = dirs[y, x]
+            while self.canStep(y, x):
+                bestMap[y, x] = self.names[d]
+                y += self.dirs[d][0]
+                x += self.dirs[d][1]
+
+            y -= self.dirs[d][0]
+            x -= self.dirs[d][1]
+            bestMap[y, x] = '●'
+            bestMap[self.end] = '✗'
+            maps.append(bestMap.copy())
+
+        return numpy.array(maps)

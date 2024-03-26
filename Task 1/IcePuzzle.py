@@ -13,7 +13,8 @@ def parseMap():
 def main():
     map = parseMap()
     env = Environment(map)
-    # env.trainEpisode(.1, .1, 1e-7, 10)
+    env.learn(1000, .1, .1, .1)
+    print(env.getBestMap())
 
 if __name__ == '__main__':
     main()
