@@ -3,6 +3,9 @@ from collections import defaultdict
 
 State = tuple[int, int]
 
+def dropNaN(x : numpy.ndarray) -> numpy.ndarray:
+    return x[~numpy.isnan(x)]
+
 class Environment:
     dirs = {
         0: (-1,  0),
@@ -17,15 +20,18 @@ class Environment:
     N : int
     M : int
 
-    transitions : numpy.ndarray # N × M -> dict[dir, State]
+    invalids : numpy.ndarray # N × M × dir → bool
+    transitions : numpy.ndarray # N × M → dict[dir, State]
 
-    reward_val : int
-    Q : numpy.ndarray # N × M × dir -> float
+    reward_val : int = 100
+    R : numpy.ndarray # N × M → float
+    Q : numpy.ndarray # N × M × dir → float
 
     def __init__(self, map):
         self.parseMap(map)
-        self.reward_val = 100
+
         self.Q = numpy.random.rand(self.N, self.M, len(self.dirs))
+        self.Q[self.invalids] = numpy.nan
         self.Q[self.end] = numpy.zeros(len(self.dirs))
 
     def parseMap(self, map):
@@ -35,6 +41,8 @@ class Environment:
         self.N = len(map)
         self.M = len(map[0])
 
+        self.R = numpy.zeros((self.N, self.M))
+        self.invalids = numpy.zeros((self.N, self.M, len(self.dirs)), dtype = bool)
         self.transitions = numpy.array([[dict() for x in map[0]] for y in map])
 
         for y, row in enumerate(self.map):
@@ -60,7 +68,11 @@ class Environment:
                 raise ValueError('Several ends')
             self.end = (y, x)
 
+        if tile in ('r', 'R'):
+            self.R[y, x] = self.reward_val
+
         if tile == 'x':
+            self.invalids[y, x] = True
             return
 
         assert self.canStep(y, x)
@@ -72,8 +84,24 @@ class Environment:
             cy -= dy
             cx -= dx
 
-            assert dir not in self.transitions[y, x]
-            self.transitions[y, x][dir] = (cy, cx)
+            if cy != y or cx != x:
+                assert dir not in self.transitions[y, x]
+                self.transitions[y, x][dir] = (cy, cx)
+            else:
+                self.invalids[y, x, dir] = True
 
-    def nextStepQ(self, s : State, alpha : float, gamma : float) -> float:
-        for act, sp in self.transitions[s].items():
+    def learn(self, alpha : float, gamma : float, epsilon : float) -> float:
+        s = self.start
+        while s != self.end:
+            max_a = numpy.nanargmax(self.Q[s])
+            rand_a = numpy.random.choice(numpy.arange(0, len(self.dirs))[~numpy.isnan(self.Q[s])])
+            a = numpy.random.choice([max_a, rand_a], p = [epsilon, 1 - epsilon])
+
+            sp = self.transitions[s][a]
+            r = self.R[sp]
+            print(f'Before: {self.Q[sp][a]}')
+            self.Q[sp][a] += alpha * (r + gamma * numpy.max(dropNaN(self.Q[sp])) - self.Q[s][a])
+            print(f'After: {self.Q[sp][a]}')
+            s = sp
+
+        return self.Q
