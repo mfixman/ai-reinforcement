@@ -8,12 +8,6 @@ class Environment:
         2: ( 0, -1),
         3: ( 0,  1),
     }
-    dir_names = {
-        0: 'Up',
-        1: 'Down',
-        2: 'Left',
-        3: 'Right',
-    }
 
     map : list[list[str]]
     start : tuple[int, int]
@@ -21,10 +15,10 @@ class Environment:
     N : int
     M : int
 
-    transitions : numpy.ndarray # N × M array -> dict[dir, tuple[int, int]]
+    transitions : numpy.ndarray # N × M -> dict[dir, tuple[int, int]]
 
     reward_val : int
-    Q : numpy.ndarray # N × M × dir array -> float
+    Q : numpy.ndarray # N × M × dir -> float
 
     def __init__(self, map):
         self.parseMap(map)
