@@ -3,35 +3,43 @@ from collections import defaultdict
 
 class Environment:
     dirs = {
-        'Up':    (-1,  0),
-        'Down':  ( 1,  0),
-        'Left':  ( 0, -1),
-        'Right': ( 0,  1),
+        0: (-1,  0),
+        1: ( 1,  0),
+        2: ( 0, -1),
+        3: ( 0,  1),
     }
-    dir_ids = {
-        'Up':    0,
-        'Down':  1,
-        'Left':  2,
-        'Right': 3,
+    dir_names = {
+        0: 'Up',
+        1: 'Down',
+        2: 'Left',
+        3: 'Right',
     }
+
+    map : list[list[str]]
+    start : tuple[int, int]
+    end : tuple[int, int]
+    N : int
+    M : int
+
+    transitions : numpy.ndarray # N × M array -> dict[dir, tuple[int, int]]
+
+    reward_val : int
+    Q : numpy.ndarray # N × M × dir array -> float
 
     def __init__(self, map):
         self.parseMap(map)
         self.reward_val = 100
-        self.Q = numpy.full((self.N, self.M, len(self.dirs)), numpy.nan)
-        for (ty, tx), tds in self.transitions.items():
-            for t in tds.keys():
-                self.Q[(ty, tx, self.dir_ids[t])] = 0
+        self.Q = numpy.random.rand(self.N, self.M, len(self.dirs))
+        self.Q[self.end] = numpy.zeros(len(self.dirs))
 
     def parseMap(self, map):
         self.map = map
         self.start = None
         self.end = None
-        self.rewards = set()
         self.N = len(map)
         self.M = len(map[0])
 
-        self.transitions = defaultdict(lambda: dict())
+        self.transitions = numpy.array([[dict() for x in map[0]] for y in map])
 
         for y, row in enumerate(self.map):
             for x, tile in enumerate(row):
@@ -68,8 +76,8 @@ class Environment:
             cy -= dy
             cx -= dx
 
-            assert dir not in self.transitions[(y, x)]
-            self.transitions[(y, x)][dir] = (cy, cx)
+            assert dir not in self.transitions[y, x]
+            self.transitions[y, x][dir] = (cy, cx)
 
     def trainEpisode(self, alpha, gamma, epsilon, max_steps):
         s = self.start
