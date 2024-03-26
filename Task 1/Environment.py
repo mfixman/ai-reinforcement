@@ -1,6 +1,8 @@
 import numpy
 from collections import defaultdict
 
+State = tuple[int, int]
+
 class Environment:
     dirs = {
         0: (-1,  0),
@@ -10,12 +12,12 @@ class Environment:
     }
 
     map : list[list[str]]
-    start : tuple[int, int]
-    end : tuple[int, int]
+    start : State
+    end : State
     N : int
     M : int
 
-    transitions : numpy.ndarray # N × M -> dict[dir, tuple[int, int]]
+    transitions : numpy.ndarray # N × M -> dict[dir, State]
 
     reward_val : int
     Q : numpy.ndarray # N × M × dir -> float
@@ -73,22 +75,5 @@ class Environment:
             assert dir not in self.transitions[y, x]
             self.transitions[y, x][dir] = (cy, cx)
 
-    def trainEpisode(self, alpha, gamma, epsilon, max_steps):
-        s = self.start
-
-        open_actions = [self.dir_ids[x] for x in self.transition[s].keys()]
-        best_actions = numpy.argmax(self.Q[s])
-        # open_values = numpy.array(self.transition[s].values())
-        for step in range(max_steps):
-            if numpy.random.uniform() < epsilon:
-                a = numpy.random.choice(open_actions)
-            else:
-                a = numpy.random.choice(best_actions)
-
-            ns = self.transition[s, a]
-            r = self.reward_val if ns == self.end else 0
-            self.Q[s][a] += alpha * (r + gamma * numpy.max(self.Q[ns]) - self.Q[s][a])
-
-            s = ns
-            if s == self.end:
-                break
+    def nextStepQ(self, s : State, alpha : float, gamma : float) -> float:
+        for act, sp in self.transitions[s].items():
