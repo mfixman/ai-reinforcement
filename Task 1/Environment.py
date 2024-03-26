@@ -29,6 +29,7 @@ class Environment:
     end : State
     N : int
     M : int
+    D : int
     obstacles : numpy.ndarray # N × M → bool
 
     invalids : numpy.ndarray # N × M × dir → bool
@@ -43,9 +44,9 @@ class Environment:
     def __init__(self, map, policy = None):
         self.parseMap(map)
 
-        self.Q = numpy.random.rand(self.N, self.M, len(self.dirs))
+        self.Q = numpy.random.rand(self.N, self.M, self.D)
         self.Q[self.invalids] = numpy.nan
-        self.Q[self.end] = numpy.zeros(len(self.dirs))
+        self.Q[self.end] = numpy.zeros(self.D)
 
         self.policy = policy or Environment.epsgreedy
 
@@ -55,10 +56,11 @@ class Environment:
         self.end = None
         self.N = len(map)
         self.M = len(map[0])
+        self.D = len(self.dirs)
         self.obstacles = numpy.zeros((self.N, self.M), dtype = bool)
 
         self.R = numpy.zeros((self.N, self.M))
-        self.invalids = numpy.zeros((self.N, self.M, len(self.dirs)), dtype = bool)
+        self.invalids = numpy.zeros((self.N, self.M, self.D), dtype = bool)
         self.transitions = numpy.array([[dict() for x in map[0]] for y in map])
 
         for y, row in enumerate(self.map):
@@ -109,12 +111,12 @@ class Environment:
 
     def getEpsGreedy(self, q, epsilon):
         max_a = numpy.nanargmax(q)
-        rand_a = numpy.random.choice(numpy.arange(len(self.dirs))[~numpy.isnan(q)])
+        rand_a = numpy.random.choice(numpy.arange(self.D)[~numpy.isnan(q)])
         return numpy.random.choice([max_a, rand_a], p = [epsilon, 1 - epsilon])
 
     def getBellman(self, q):
         p = numpy.nan_to_num(q, nan = 0)
-        return numpy.random.choice(numpy.arange(len(self.dirs)), p = p / p.sum())
+        return numpy.random.choice(numpy.arange(self.D), p = p / p.sum())
 
     def run(self, alpha : float, gamma : float, epsilon : float) -> numpy.ndarray:
         s = self.start
@@ -134,11 +136,36 @@ class Environment:
 
         return self.Q
 
-    def learn(self, epochs : int, alpha : float, gamma : float, epsilon : float):
-        for epoch in range(1, epochs + 1):
+    def learn(self, max_epochs : int, alpha : float, gamma : float, epsilon : float) -> int:
+        for epoch in range(1, max_epochs + 1):
             old_Q = self.Q.copy()
             self.run(alpha, gamma, epsilon)
             diff = numpy.mean(dropNaN(numpy.abs(old_Q - self.Q)))
+
+            if self.reachesEnd():
+                return epoch
+        
+        return None
+
+    def reachesEnd(self) -> bool:
+        dirs = numpy.argmax(numpy.nan_to_num(self.Q, nan = float('-inf')), axis = 2)
+
+        visited = numpy.zeros((self.N, self.M, self.D), dtype = bool)
+        y, x = self.start
+        while (y, x) != self.end:
+            d = dirs[y, x]
+            if visited[y, x, d]:
+                return False
+
+            while self.canStep(y, x):
+                visited[y, x, d] = True
+                y += self.dirs[d][0]
+                x += self.dirs[d][1]
+
+            y -= self.dirs[d][0]
+            x -= self.dirs[d][1]
+
+        return True
 
     def getBestMap(self):
         dirs = numpy.argmax(numpy.nan_to_num(self.Q, nan = float('-inf')), axis = 2)

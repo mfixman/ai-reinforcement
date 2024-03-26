@@ -12,9 +12,10 @@ def parseMap():
 
 def main():
     map = parseMap()
-    env = Environment(map, policy = Environment.bellman)
-    env.learn(1000, .1, .1, .1)
+    env = Environment(map, policy = Environment.epsgreedy)
+    epochs = env.learn(1000, .1, .1, .1)
     print(env.getBestMap())
+    print(f'¡¡¡¡¡Got there in {epochs} epochs!!!!!')
 
 if __name__ == '__main__':
     main()
