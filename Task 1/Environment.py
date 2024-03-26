@@ -13,12 +13,21 @@ class Environment:
         2: ( 0, -1),
         3: ( 0,  1),
     }
+    names = {
+        -1: 'x',
+         0: '↑',
+         1: '↓',
+         2: '←',
+         3: '→',
+    }
 
     map : list[list[str]]
+
     start : State
     end : State
     N : int
     M : int
+    obstacles : numpy.ndarray # N × M → bool
 
     invalids : numpy.ndarray # N × M × dir → bool
     transitions : numpy.ndarray # N × M → dict[dir, State]
@@ -40,6 +49,7 @@ class Environment:
         self.end = None
         self.N = len(map)
         self.M = len(map[0])
+        self.obstacles = numpy.zeros((self.N, self.M), dtype = bool)
 
         self.R = numpy.zeros((self.N, self.M))
         self.invalids = numpy.zeros((self.N, self.M, len(self.dirs)), dtype = bool)
@@ -73,6 +83,7 @@ class Environment:
 
         if tile == 'x':
             self.invalids[y, x] = True
+            self.obstacles[y, x] = True
             return
 
         assert self.canStep(y, x)
@@ -90,7 +101,7 @@ class Environment:
             else:
                 self.invalids[y, x, dir] = True
 
-    def learn(self, alpha : float, gamma : float, epsilon : float) -> float:
+    def run(self, alpha : float, gamma : float, epsilon : float) -> float:
         s = self.start
         while s != self.end:
             max_a = numpy.nanargmax(self.Q[s])
@@ -99,9 +110,14 @@ class Environment:
 
             sp = self.transitions[s][a]
             r = self.R[sp]
-            print(f'Before: {self.Q[sp][a]}')
-            self.Q[sp][a] += alpha * (r + gamma * numpy.max(dropNaN(self.Q[sp])) - self.Q[s][a])
-            print(f'After: {self.Q[sp][a]}')
+            self.Q[s][a] += alpha * (r + gamma * numpy.max(dropNaN(self.Q[sp])) - self.Q[s][a])
             s = sp
 
         return self.Q
+
+    def learn(self, epochs : int, alpha : float, gamma : float, epsilon : float) -> float:
+        for epoch in range(1, epochs + 1):
+            old_Q = self.Q.copy()
+            self.run(alpha, gamma, epsilon)
+            diff = numpy.mean(dropNaN(numpy.abs(old_Q - self.Q)))
+            # print(f'Epoch {epoch:3d}/{epochs}:\t{diff:g}')
