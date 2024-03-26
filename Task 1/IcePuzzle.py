@@ -1,7 +1,9 @@
 from Environment import Environment
+import os
 
 def parseMap():
-    lines = open('snow_map').readlines()
+    sourcedir = os.path.dirname(os.path.realpath(__file__))
+    lines = open(os.path.join(sourcedir,'snow_map')).readlines()
     lines = lines[1:]
 
     map = []
