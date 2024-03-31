@@ -1,5 +1,7 @@
 from Environment import Environment
 import os
+import matplotlib
+from matplotlib import pyplot as plt
 
 def parseMap():
     sourcedir = os.path.dirname(os.path.realpath(__file__))
@@ -15,9 +17,32 @@ def parseMap():
 def main():
     map = parseMap()
     env = Environment(map, policy = Environment.epsgreedy)
-    epochs = env.learn(1000, .1, .1, .1)
+    # Parameters for Grid search to be modified
+    policies=[Environment.epsgreedy, Environment.bellman]
+    alphas=[0.1]
+    gammas=[0.1]
+    epsilons=[0.8, 0.9, 1.0]
+    decay_rates=[0.90, 1.0]
+    max_epochs=500
+    max_steps = 50
+    
+    plt.figure(figsize=(8,6))
+    #Perform Grid Search
+    for alpha in alphas:
+        for gamma in gammas:
+            for epsilon in epsilons:
+                for decay_rate in decay_rates:
+                    env.policy = policies[1]
+                    epochs,steps_per_epoch = env.learn(max_epochs=max_epochs, alpha=alpha, gamma=gamma, epsilon=epsilon, decay_rate=decay_rate, max_steps=max_steps)
+                    plt.plot(range(max_epochs), steps_per_epoch, label=f'alpha={alpha}, gamma={gamma}, epsilon={epsilon}, decay_rate={decay_rate}, policy={policies[0]}')
+                    plt.title('Q Learning Performance Graph')
+                    plt.xlabel('Episodes')
+                    plt.ylabel('Steps to Reach End Goal')
+    
+    plt.legend()
+    plt.show()
     print(env.getBestMap())
-    print(f'¡¡¡¡¡Got there in {epochs} epochs!!!!!')
+    print(f'¡¡¡¡¡Got there in {steps_per_epoch[-1]} steps!!!!!')
 
 if __name__ == '__main__':
     main()

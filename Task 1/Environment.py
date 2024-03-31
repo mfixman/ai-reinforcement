@@ -110,17 +110,21 @@ class Environment:
                 self.invalids[y, x, dir] = True
 
     def getEpsGreedy(self, q, epsilon):
+        # Epsilon Greedy Policy
         max_a = numpy.nanargmax(q)
         rand_a = numpy.random.choice(numpy.arange(self.D)[~numpy.isnan(q)])
-        return numpy.random.choice([max_a, rand_a], p = [epsilon, 1 - epsilon])
+        return numpy.random.choice([rand_a, max_a], p = [epsilon, 1 - epsilon])
 
     def getBellman(self, q):
+        # Bellman policy: using softmax do determine best action
         p = numpy.nan_to_num(q, nan = 0)
         return numpy.random.choice(numpy.arange(self.D), p = p / p.sum())
 
-    def run(self, alpha : float, gamma : float, epsilon : float) -> numpy.ndarray:
+    def run(self, alpha : float, gamma : float, epsilon : float, max_steps : int) -> numpy.ndarray:
         s = self.start
-        while s != self.end:
+        steps=0
+        while s != self.end and steps <= max_steps:
+            steps+=1
             match self.policy:
                 case Environment.epsgreedy:
                     a = self.getEpsGreedy(self.Q[s], epsilon)
@@ -134,18 +138,24 @@ class Environment:
             self.Q[s][a] += alpha * (r + gamma * numpy.max(dropNaN(self.Q[sp])) - self.Q[s][a])
             s = sp
 
-        return self.Q
+        return self.Q, steps
 
-    def learn(self, max_epochs : int, alpha : float, gamma : float, epsilon : float) -> int:
+    def learn(self, max_epochs : int, alpha : float, gamma : float, epsilon : float, decay_rate : float, max_steps : int) -> int:
+        
+        steps_per_epoch = []
         for epoch in range(1, max_epochs + 1):
             old_Q = self.Q.copy()
-            self.run(alpha, gamma, epsilon)
+            _,steps=self.run(alpha, gamma, epsilon, max_steps=max_steps)
             diff = numpy.mean(dropNaN(numpy.abs(old_Q - self.Q)))
-
-            if self.reachesEnd():
-                return epoch
-        
-        return None
+            steps_per_epoch.append(steps)
+            
+            # Add decay after every epoch
+            epsilon *= decay_rate
+            
+            # Early Stopping
+            # if self.reachesEnd():
+            #     return epoch,steps
+        return epoch,steps_per_epoch
 
     def reachesEnd(self) -> bool:
         dirs = numpy.argmax(numpy.nan_to_num(self.Q, nan = float('-inf')), axis = 2)
