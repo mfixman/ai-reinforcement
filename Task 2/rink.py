@@ -14,7 +14,7 @@ from torch import nn, optim
 from torch.nn import functional as F
 
 class SkatingRinkEnv(gym.Env):
-    speed = .1
+    speed = .25
     ang_speed = 1/10 * (2 * numpy.pi)
 
     end = numpy.array([10, 10])
@@ -31,15 +31,17 @@ class SkatingRinkEnv(gym.Env):
         self.state = numpy.zeros(3)
 
     def step(self, action : int) -> tuple[ndarray, float, bool, dict[None, None]]:
+        sign = action - 1
+
         self.state = numpy.array([
-            self.state[0] + action * self.speed * numpy.sin(self.state[2]),
-            self.state[1] + action * self.speed * numpy.cos(self.state[2]),
-            self.state[2] + self.ang_speed * action,
+            self.state[0] + self.speed * numpy.sin(self.state[2]),
+            self.state[1] + self.speed * numpy.cos(self.state[2]),
+            self.state[2] + self.ang_speed * sign,
         ])
 
         coords = self.state[[0, 1]]
-        done = numpy.sqrt(numpy.sum((coords - self.end) ** 2)) < 1
-        reward = 1 if done else -0.01
+        done = numpy.sqrt(numpy.sum((coords - self.end) ** 2)) < 2
+        reward = 1000 if done else -0.1
         info : dict[None, None] = {}
 
         return self.state, reward, done, info
@@ -103,14 +105,16 @@ class Trainer:
     def eps_by_episode(self, episode : int) -> float:
         return self.eps_end + (self.eps_start - self.eps_end) * numpy.exp(-1. * episode / self.eps_decay)
 
-    def train_episode(self, epsilon : float) -> bool:
+    def train_episode(self, epsilon : float) -> None | int:
         batch_size = 64
         gamma = 0.99
 
         state = self.env.reset()
         episode_rewards = 0
 
-        for e in range(0, 10000):
+        for e in range(0, 100000):
+            # print(state)
+
             if random.random() < epsilon:
                 action = self.env.action_space.sample()
             else:
@@ -146,9 +150,9 @@ class Trainer:
                 self.optimizer.step()
 
             if done:
-                return True
+                return episode_rewards
         else:
-            return False
+            return None
 
     def train(self):
         episodes = 1
@@ -156,10 +160,10 @@ class Trainer:
 
         for episode in range(episodes):
             eps = self.eps_by_episode(episode)
-            done = self.train_episode(eps)
+            rewards = self.train_episode(eps)
 
-            if done:
-                print(f"Episode: {episode}, Total Reward: {episode_rewards}")
+            if rewards is not None:
+                print(f"Episode: {episode}, Total Reward: {rewards}")
             else:
                 print("Didn't get to finish!")
 
