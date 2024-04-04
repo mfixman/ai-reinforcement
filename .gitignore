@@ -303,3 +303,5 @@ TSWLatexianTemp*
 */.idea/*
 */.ipynb_checkpoints/*
 */.jupyter/*
+*/.pyenv/*
+Task 2/venv

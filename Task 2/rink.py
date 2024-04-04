@@ -155,7 +155,7 @@ class Trainer:
             return None
 
     def train(self):
-        episodes = 1
+        episodes = 10
         target_update = 10
 
         for episode in range(episodes):
