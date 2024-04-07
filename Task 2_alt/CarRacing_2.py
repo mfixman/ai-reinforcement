@@ -1,6 +1,6 @@
 import gymnasium as gym
 import torch
-from lib import myDQN, ReplayMemory, select_action, optimize_model, plot_durations
+from lib import myDQN, ReplayBuffer, select_action, optimize_model, plot_durations
 from matplotlib import pyplot as plt
 import torch.optim as optim
 from collections import namedtuple
@@ -8,6 +8,7 @@ import yaml
 import os
 from itertools import count
 import numpy as np
+import torch.nn as nn
 
 #lib files
 env = gym.make('LunarLander-v2')
@@ -52,7 +53,7 @@ optimizer = optim.AdamW(my_DQN.parameters(), lr=lr, amsgrad=True)
 
 # Define Replay Memory
 transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
-memory = ReplayMemory(10000, transition=transition)
+memory = ReplayBuffer(10000)
 
 total_steps = 0
 episode_list=[]
@@ -75,8 +76,8 @@ for epoch in range(num_episodes):
         memory.push(state, action, next_state, reward)
         
         state = next_state
-        
-        optimize_model(memory, transition, my_DQN, my_DQN_target, optimizer, gamma, batch_size, device)
+        loss_func = nn.SmoothL1Loss()
+        optimize_model(memory, transition, my_DQN, my_DQN_target, optimizer, gamma, batch_size, device, loss_func)
         
         target_policy_dict = my_DQN_target.state_dict()
         policy_policy_dict = my_DQN.state_dict()
