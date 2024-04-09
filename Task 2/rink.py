@@ -13,6 +13,8 @@ from numpy import ndarray
 from torch import nn, optim
 from torch.nn import functional as F
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 class SkatingRinkEnv(gym.Env):
     speed = .25
     ang_speed = 1/10 * (2 * numpy.pi)
@@ -43,7 +45,7 @@ class SkatingRinkEnv(gym.Env):
         angle_range = (-numpy.pi, numpy.pi)
 
         ranges = numpy.array([space_range, space_range, angle_range])
-        self.observation_space = spaces.Box(low = ranges[:, 0], high = ranges[:, 1], dtype = numpy.float32)
+        self.observation_space = spaces.Box(low = ranges[:, 0], high = ranges[:, 1])
 
         self.state = numpy.zeros(3)
 
@@ -76,7 +78,8 @@ class SkatingRinkEnv(gym.Env):
     def eval(self, model : nn.Module):
         with torch.no_grad():
             for e in range(1, 100 + 1):
-                action = model(self.state)
+                q_values = model(torch.FloatTensor(self.state).unsqueeze(0).to(device)).squeeze().cpu().numpy()
+                action = q_values.argmax()
                 _, reward, done, _ = self.step(action)
 
                 print(f'{e:02d}: {self.state[0]:g} {self.state[1]:g} {self.state[2]:g}: {action}')
@@ -157,7 +160,7 @@ class Trainer:
                 action = self.env.action_space.sample()
             else:
                 with torch.no_grad():
-                    state_tensor = torch.FloatTensor(state).unsqueeze(0).to('cpu')
+                    state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
                     action = self.model(state_tensor).argmax().item()
 
             next_state, reward, done, _ = self.env.step(action)
@@ -171,11 +174,11 @@ class Trainer:
                 batch = self.replay_buffer.sample(batch_size)
                 batch_states_raw, batch_actions_raw, batch_rewards_raw, batch_next_states_raw, batch_dones_raw = zip(*batch)
 
-                batch_states = torch.FloatTensor(numpy.array(batch_states_raw)).to('cpu')
-                batch_actions = torch.LongTensor(numpy.array(batch_actions_raw)).to('cpu')
-                batch_rewards = torch.FloatTensor(numpy.array(batch_rewards_raw)).to('cpu')
-                batch_next_states = torch.FloatTensor(numpy.array(batch_next_states_raw)).to('cpu')
-                batch_dones = torch.FloatTensor([float(x) for x in numpy.array(batch_dones_raw)]).to('cpu')
+                batch_states = torch.FloatTensor(numpy.array(batch_states_raw)).to(device)
+                batch_actions = torch.LongTensor(numpy.array(batch_actions_raw)).to(device)
+                batch_rewards = torch.FloatTensor(numpy.array(batch_rewards_raw)).to(device)
+                batch_next_states = torch.FloatTensor(numpy.array(batch_next_states_raw)).to(device)
+                batch_dones = torch.FloatTensor([float(x) for x in numpy.array(batch_dones_raw)]).to(device)
 
                 current_q = self.model(batch_states).gather(1, batch_actions.unsqueeze(1)).squeeze(1)
 
@@ -205,7 +208,7 @@ class Trainer:
 
 def main():
     env = SkatingRinkEnv()
-    model = DQN(env.observation_space.shape[0], output_dim = env.action_space.n).to('cpu')
+    model = DQN(env.observation_space.shape[0], output_dim = env.action_space.n).to(device)
     target_model = DQN(env.observation_space.shape[0], output_dim = env.action_space.n)
     optimizer = optim.Adam(model.parameters(), lr = .001)
 
