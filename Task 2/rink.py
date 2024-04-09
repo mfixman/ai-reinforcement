@@ -23,33 +23,60 @@ class SkatingRinkEnv(gym.Env):
     action_space : spaces.Discrete
     observation_space : spaces.Box
 
+    actions = {
+        'left': 0,
+        'straight': 1,
+        'right': 2,
+    }
+
+    state_vars = {
+        'y': 0,
+        'x': 1,
+        'phi': 2,
+    }
+
     def __init__(self):
         super(SkatingRinkEnv, self).__init__()
-        self.action_space = spaces.Discrete(3)
-        self.observation_space = spaces.Box(low=numpy.array([0, 0, -numpy.pi]), high=numpy.array([100, 100, numpy.pi]), dtype=numpy.float32)
+        self.action_space = spaces.Discrete(len(self.actions))
+
+        space_range = (-100, 100)
+        angle_range = (-numpy.pi, numpy.pi)
+
+        ranges = numpy.array([space_range, space_range, angle_range])
+        self.observation_space = spaces.Box(low = ranges[:, 0], high = ranges[:, 1], dtype = numpy.float32)
 
         self.state = numpy.zeros(3)
 
     def step(self, action : int) -> tuple[ndarray, float, bool, dict[None, None]]:
         sign = action - 1
 
+        y, x, phi = self.state
+
         self.state = numpy.array([
-            self.state[0] + self.speed * numpy.sin(self.state[2]),
-            self.state[1] + self.speed * numpy.cos(self.state[2]),
-            self.state[2] + self.ang_speed * sign,
+            y + self.speed * numpy.sin(phi),
+            x + self.speed * numpy.cos(phi),
+            phi + self.ang_speed * sign,
         ])
 
-        coords = self.state[[0, 1]]
-        done = numpy.sqrt(numpy.sum((coords - self.end) ** 2)) < 2
-        reward = 1000 if done else -0.1
-        info : dict[None, None] = {}
+        distance = numpy.sqrt(numpy.sum((numpy.array([y, x]) - self.end) ** 2))
 
-        return self.state, reward, done, info
+        if distance < 1:
+            reward = 1000
+            done = True
+        elif distance >= 100:
+            # Out of bounds
+            reward = -1000
+            done = True
+        else:
+            reward = -0.1
+            done = False
+
+        return self.state, reward, done, {}
 
     def eval(self, model : nn.Module):
         with torch.no_grad():
             for e in range(1, 100 + 1):
-                action = model(self.state.to('cuda'))
+                action = model(self.state)
                 _, reward, done, _ = self.step(action)
 
                 print(f'{e:02d}: {self.state[0]:g} {self.state[1]:g} {self.state[2]:g}: {action}')
@@ -130,7 +157,7 @@ class Trainer:
                 action = self.env.action_space.sample()
             else:
                 with torch.no_grad():
-                    state_tensor = torch.FloatTensor(state).unsqueeze(0).to('cuda')
+                    state_tensor = torch.FloatTensor(state).unsqueeze(0).to('cpu')
                     action = self.model(state_tensor).argmax().item()
 
             next_state, reward, done, _ = self.env.step(action)
@@ -144,11 +171,11 @@ class Trainer:
                 batch = self.replay_buffer.sample(batch_size)
                 batch_states_raw, batch_actions_raw, batch_rewards_raw, batch_next_states_raw, batch_dones_raw = zip(*batch)
 
-                batch_states = torch.FloatTensor(numpy.array(batch_states_raw)).to('cuda')
-                batch_actions = torch.LongTensor(numpy.array(batch_actions_raw)).to('cuda')
-                batch_rewards = torch.FloatTensor(numpy.array(batch_rewards_raw)).to('cuda')
-                batch_next_states = torch.FloatTensor(numpy.array(batch_next_states_raw)).to('cuda')
-                batch_dones = torch.FloatTensor([float(x) for x in numpy.array(batch_dones_raw)]).to('cuda')
+                batch_states = torch.FloatTensor(numpy.array(batch_states_raw)).to('cpu')
+                batch_actions = torch.LongTensor(numpy.array(batch_actions_raw)).to('cpu')
+                batch_rewards = torch.FloatTensor(numpy.array(batch_rewards_raw)).to('cpu')
+                batch_next_states = torch.FloatTensor(numpy.array(batch_next_states_raw)).to('cpu')
+                batch_dones = torch.FloatTensor([float(x) for x in numpy.array(batch_dones_raw)]).to('cpu')
 
                 current_q = self.model(batch_states).gather(1, batch_actions.unsqueeze(1)).squeeze(1)
 
@@ -178,7 +205,7 @@ class Trainer:
 
 def main():
     env = SkatingRinkEnv()
-    model = DQN(env.observation_space.shape[0], output_dim = env.action_space.n).to('cuda')
+    model = DQN(env.observation_space.shape[0], output_dim = env.action_space.n).to('cpu')
     target_model = DQN(env.observation_space.shape[0], output_dim = env.action_space.n)
     optimizer = optim.Adam(model.parameters(), lr = .001)
 
