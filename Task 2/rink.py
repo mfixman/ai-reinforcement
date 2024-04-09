@@ -198,13 +198,12 @@ class Trainer:
                 replays[e] = torch.cat(replays[e], tup[e])[-10000:]
 
             replays.append((states, actions, new_states, rewards, dones))
-            # states = torch.where(dones.unsqueeze(1), SkatingRinkEnv.zeros(batch_size), new_states)
             states = new_states[~dones]
 
-            if len(replays[0]) >= actions_size:
-                used_replays_idx = numpy.random.randint(len(replays[0]), size = actions_size)
-                used_replays = [replays[x] for x in used_replays_idx]
-                total_loss += self.commit_gradient(*[torch.cat(x) for x in zip(*used_replays)])
+            n_replays = len(replays[0])
+            used_replays_idx = numpy.random.randint(n_replays, size = actions_size)
+            used_replays = [replays[i][x] for x in used_replays_idx for i in len(replays)]
+            total_loss += self.commit_gradient(*used_replays)
 
         return total_loss, total_wins, total_dones
 
