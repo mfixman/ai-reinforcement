@@ -144,16 +144,16 @@ class Trainer:
 
     replay_buffer : ReplayBuffer
 
-    def __init__(self, env : gym.Env, model : nn.Module, target_model : nn.Module, optimizer : optim.Adam, batch_size : int, gamma : float, max_steps : int):
+    def __init__(self, env : gym.Env, model : nn.Module, target_model : nn.Module, optimizer : optim.Adam, batch_size : int, gamma : float, max_steps : int, eps_start : float, eps_end : float, eps_decay : int):
         self.env = env
         self.model = model
         self.target_model = target_model
         self.optimizer = optimizer
         self.loss_fn = nn.SmoothL1Loss()
 
-        self.eps_start = 1.0
-        self.eps_end = 0.01
-        self.eps_decay = 500
+        self.eps_start = eps_start
+        self.eps_end = eps_end
+        self.eps_decay = eps_decay
         
         self.batch_size = batch_size
         self.gamma = gamma
@@ -222,19 +222,25 @@ class Trainer:
             print(f"Episode: {episode}, Total Reward: {rewards or 0:g}")
 
         self.target_model.load_state_dict(self.model.state_dict())
+        
+    def plot_results(self):
+        return
 
 def main():
     env = SkatingRinkEnv()
-    lr = 0.01
+    lr = 0.00001
     batch_size = 64
-    gamma = 0.001
+    gamma = 0.99
     max_steps = 500
     episodes = 1000
+    eps_start = 0.9
+    eps_end = 0.005
+    eps_decay = 500
     model = DQN(env.observation_space.shape[0], output_dim = env.action_space.n).to(device)
     target_model = DQN(env.observation_space.shape[0], output_dim = env.action_space.n)
     optimizer = optim.Adam(model.parameters(), lr = lr)
 
-    Trainer(env, model, target_model, optimizer, batch_size, gamma, max_steps).train(episodes)
+    Trainer(env, model, target_model, optimizer, batch_size, gamma, max_steps, eps_start, eps_end, eps_decay).train(episodes)
     env.eval(model)
 
 if __name__ == '__main__':
