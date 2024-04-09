@@ -10,7 +10,7 @@ from gymnasium import spaces
 from itertools import count
 from matplotlib import pyplot
 from numpy import ndarray, array
-from torch import nn, optim, tensor
+from torch import nn, optim, tensor, LongTensor, FloatTensor
 from torch.nn import functional as F
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -22,7 +22,8 @@ class SkatingRinkEnv(gym.Env):
     end = numpy.array([10, 10])
 
     state : ndarray
-    action_space : spaces.Discrete
+
+    action_space = spaces.Discrete(3)
     observation_space : spaces.Box
 
     actions = {
@@ -39,7 +40,6 @@ class SkatingRinkEnv(gym.Env):
 
     def __init__(self):
         super(SkatingRinkEnv, self).__init__()
-        self.action_space = spaces.Discrete(len(self.actions))
 
         space_range = (-100, 100)
         angle_range = (-numpy.pi, numpy.pi)
@@ -48,6 +48,32 @@ class SkatingRinkEnv(gym.Env):
         self.observation_space = spaces.Box(low = ranges[:, 0], high = ranges[:, 1])
 
         self.state = numpy.zeros(3, dtype = numpy.float32)
+
+    @classmethod
+    def steps(cls, states : tensor, actions : tensor) -> tensor:
+        signs = actions - 1
+
+        ys, xs, phis = states.T
+        d_phis = cls.ang_speed * signs
+        ds = torch.stack(
+            [
+                cls.speed * torch.sin(phis + d_phis),
+                cls.speed * torch.cos(phis + d_phis),
+                d_phis,
+            ]
+        ).T
+
+        new_states = states + ds
+
+        distances = (new_states[:, 0:2] - tensor(cls.end, device = device)).square().sum(axis = 1).sqrt()
+
+        rewards = torch.where(distances < 1, 1000, -0.1)
+        rewards = torch.where(distances >= 100, -1000, rewards)
+
+        dones = torch.where((distances < 1) | (distances >= 100), True, False)
+
+        return new_states, rewards, dones
+
 
     def step(self, action : int) -> tuple[ndarray, float, bool, dict[None, None]]:
         sign = action - 1
@@ -96,6 +122,10 @@ class SkatingRinkEnv(gym.Env):
         self.state = numpy.zeros(3, dtype = numpy.float32)
         return self.state
 
+    @classmethod
+    def zeros(cls, batch_size : int) -> tensor:
+        return torch.zeros((batch_size, len(cls.state_vars)), device = device)
+
 class DQN(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(DQN, self).__init__()
@@ -141,7 +171,8 @@ class Trainer:
         self.optimizer = optimizer
         self.loss_fn = nn.MSELoss()
 
-        self.eps_start = 1.0
+        # self.eps_start = 1.0
+        self.eps_start = .5
         self.eps_end = 0.01
         self.eps_decay = 500
 
@@ -152,50 +183,48 @@ class Trainer:
 
     def train_episode(self, epsilon : float) -> None | int:
         batch_size = 64
+        actions_size = 100
+
+        states = SkatingRinkEnv.zeros(batch_size)
+        rewards = numpy.zeros(batch_size)
+
+        total_loss = tensor(.0)
+        replays : deque[tuple[tensor, tensor, tensor, tensor, tensor]] = deque(maxlen = 100)
+        for e in range(0, 1000):
+            with torch.no_grad():
+                probs = tensor(numpy.random.choice([False, True], p = [epsilon, 1 - epsilon], size = batch_size), device = device)
+                explorations = torch.randint(0, self.env.action_space.n, (batch_size,), device = device)
+                explotations = self.model(states).argmax(1)
+
+            actions = torch.where(probs, explorations, explotations)
+            new_states, rewards, dones = SkatingRinkEnv.steps(states, actions)
+
+            replays.append((states, actions, new_states, rewards, dones))
+
+            states = torch.where(dones.unsqueeze(1), SkatingRinkEnv.zeros(batch_size), new_states)
+
+            if len(replays) >= actions_size:
+                used_replays_idx = numpy.random.randint(len(replays), size = actions_size)
+                used_replays = [replays[x] for x in used_replays_idx]
+                total_loss += self.commit_gradient(*[torch.cat(x) for x in zip(*used_replays)])
+
+        return total_loss
+
+    def commit_gradient(self, states, actions, new_states, rewards, dones):
         gamma = 0.99
 
-        state = self.env.reset()
-        episode_rewards = 0
+        current_q = self.model(states)
+        next_q = self.model(new_states)
 
-        for e in range(0, 1000):
-            if random.random() < epsilon:
-                action = self.env.action_space.sample()
-            else:
-                with torch.no_grad():
-                    state_tensor = tensor(state, device = device).unsqueeze(0)
-                    action = self.model(state_tensor).argmax().item()
+        print(f'{rewards.shape} {tensor(gamma).shape} {next_q.shape} {dones.shape}')
+        expected_q = rewards + gamma * next_q * ~dones
 
-            next_state, reward, done, _ = self.env.step(action)
+        self.optimizer.zero_grad()
+        loss = self.loss_fn(current_q, expected_q)
+        loss.backward()
+        self.optimizer.step()
 
-            self.replay_buffer.push(state, action, reward, next_state, done)
-
-            state = next_state
-            episode_rewards += reward
-
-            if len(self.replay_buffer) > batch_size:
-                batch = self.replay_buffer.sample(batch_size)
-                batch_states_raw, batch_actions_raw, batch_rewards_raw, batch_next_states_raw, batch_dones_raw = zip(*batch)
-
-                batch_states = tensor(array(batch_states_raw), dtype = torch.float32, device = device)
-                batch_actions = tensor(batch_actions_raw, dtype = torch.int64, device = device)
-                batch_rewards = tensor(batch_rewards_raw, device = device)
-                batch_next_states = tensor(array(batch_next_states_raw), dtype = torch.float32, device = device)
-                batch_dones = tensor([float(x) for x in numpy.array(batch_dones_raw)], device = device)
-
-                current_q = self.model(batch_states).gather(1, batch_actions.unsqueeze(1)).squeeze(1)
-
-                next_q = self.model(batch_next_states).max(1)[0]
-                expected_q = batch_rewards + gamma * next_q * (1 - batch_dones)
-
-                loss = self.loss_fn(current_q, expected_q.detach())
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
-
-            if done:
-                return episode_rewards
-        else:
-            return None
+        return loss.detach().cpu()
 
     def train(self):
         episodes = 10
