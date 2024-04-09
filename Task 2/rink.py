@@ -10,7 +10,7 @@ from gymnasium import spaces
 from itertools import count
 from matplotlib import pyplot
 from numpy import ndarray, array
-from torch import nn, optim, tensor, LongTensor, FloatTensor
+from torch import nn, optim, tensor, LongTensor, FloatTensor, BoolTensor
 from torch.nn import functional as F
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -67,10 +67,10 @@ class SkatingRinkEnv(gym.Env):
 
         distances = (new_states[:, 0:2] - tensor(cls.end, device = device)).square().sum(axis = 1).sqrt()
 
-        rewards = torch.where(distances < 1, 10000, -0.1)
-        rewards = torch.where(distances >= 10, -10000, rewards)
+        rewards = torch.where(distances < 1, 10000, -10)
+        rewards = torch.where(distances >= 5, -10000, rewards)
 
-        dones = torch.where((distances < 1) | (distances >= 100), True, False)
+        dones = torch.where((distances < 1) | (distances >= 5), True, False)
 
         return new_states, rewards, dones
 
@@ -99,12 +99,12 @@ class SkatingRinkEnv(gym.Env):
             reward = -1000.
             done = True
         else:
-            reward = -0.1
+            reward = -1.
             done = False
 
         return self.state, reward, done, {}
 
-    def eval(self, model : nn.Module):
+    def eval(self, model : nn.Module, debug = True) -> bool:
         self.reset()
         with torch.no_grad():
             for e in range(1, 101):
@@ -114,12 +114,21 @@ class SkatingRinkEnv(gym.Env):
 
                 dist = ((self.state[0] - 2) ** 2 + (self.state[1] - 2) ** 2) ** (1/2)
                 ang = math.atan2(self.state[0] - 2, self.state[1] - 2) / numpy.pi
-                print(f'{e:-2d}: [{self.state[0]: 3.3f} {self.state[1]: 3.3f} {self.state[2]: 3.3f}] [{dist: 3.3f} {ang: 3.3f}] -> {action}')
+
+                if debug:
+                    print(f'{e:-2d}: [{self.state[0]: 3.3f} {self.state[1]: 3.3f} {self.state[2]: 3.3f}] [{dist: 3.3f} {ang: 3.3f}] -> {action}')
+
                 if done:
-                    print('Finished :-)')
+                    if debug:
+                        print('Finished :-)')
+
+                    return True
                     break
-            else:
-                print('Never finished :-(')
+
+        if debug:
+            print('Never finished :-(')
+
+        return False
 
     def reset(self) -> ndarray:
         self.state = numpy.zeros(3, dtype = numpy.float32)
@@ -160,14 +169,14 @@ class Trainer:
         self.loss_fn = nn.MSELoss()
 
         self.eps_start = 1.0
-        self.eps_end = 0.01
+        self.eps_end = 0
         self.eps_decay = 100
 
     def eps_by_episode(self, episode : int) -> float:
         return self.eps_end + (self.eps_start - self.eps_end) * numpy.exp(-1. * episode / self.eps_decay)
 
     def train_episode(self, epsilon : float) -> float:
-        batch_size = 100
+        batch_size = 1000
         actions_size = 1000
 
         states = SkatingRinkEnv.zeros(batch_size)
@@ -176,6 +185,7 @@ class Trainer:
         total_loss = tensor(.0)
 
         replays : tuple[tensor, tensor, tensor, tensor, tensor]
+        replays = (FloatTensor().to(device), LongTensor().to(device), FloatTensor().to(device), FloatTensor().to(device), BoolTensor().to(device))
 
         total_wins = 0
         total_dones = 0
@@ -187,23 +197,25 @@ class Trainer:
                 explorations = torch.randint(0, self.env.action_space.n, (agents,), device = device)
                 explotations = self.model(states).argmax(1)
 
-            actions = torch.where(probs, explorations, explotations)
+            actions = torch.where(probs, explotations, explorations)
+
             new_states, rewards, dones = SkatingRinkEnv.steps(states, actions)
 
             total_wins += torch.sum(dones & (rewards > 1000))
             total_dones += dones.sum()
 
             tup = (states, actions, new_states, rewards, dones)
-            for e in range(replays)
-                replays[e] = torch.cat(replays[e], tup[e])[-10000:]
+            replays = tuple(torch.cat([replays[e], tup[e]])[-100 * actions_size:] for e in range(5))
 
-            replays.append((states, actions, new_states, rewards, dones))
             states = new_states[~dones]
 
-            n_replays = len(replays[0])
+            n_replays = replays[0].shape[0]
             used_replays_idx = numpy.random.randint(n_replays, size = actions_size)
-            used_replays = [replays[i][x] for x in used_replays_idx for i in len(replays)]
+            used_replays = tuple(replays[i][used_replays_idx] for i in range(5))
             total_loss += self.commit_gradient(*used_replays)
+
+            if states.shape[0] == 0:
+                break
 
         return total_loss, total_wins, total_dones
 
@@ -229,7 +241,8 @@ class Trainer:
             eps = self.eps_by_episode(episode)
             loss, wins, dones = self.train_episode(eps)
 
-            print(f"Episode: {episode}, Total Loss: {loss:5g}, Total Wins: {wins:5g}, Total Dones: {dones}")
+            passes = self.env.eval(self.model, debug = False)
+            print(f"Episode: {episode:-2d} {'Yes!' if passes else 'Nope'}, Eps = {eps:.2f}, Total Wins: {wins:5g}, Total Dones: {dones:5g}")
 
         self.target_model.load_state_dict(self.model.state_dict())
 
@@ -240,7 +253,11 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr = .001)
 
     Trainer(env, model, target_model, optimizer).train()
-    env.eval(model)
+    result = env.eval(model, debug = False)
+    if result:
+        print('Finished!')
+    else:
+        print('Not finished :-(')
 
 if __name__ == '__main__':
     main()
