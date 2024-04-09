@@ -1,16 +1,16 @@
 import gymnasium as gym
 import math
 import matplotlib
-import numpy
 import random
+import numpy
 import torch
 
 from collections import deque, namedtuple
 from gymnasium import spaces
 from itertools import count
 from matplotlib import pyplot
-from numpy import ndarray
-from torch import nn, optim
+from numpy import ndarray, array
+from torch import nn, optim, tensor
 from torch.nn import functional as F
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -47,27 +47,30 @@ class SkatingRinkEnv(gym.Env):
         ranges = numpy.array([space_range, space_range, angle_range])
         self.observation_space = spaces.Box(low = ranges[:, 0], high = ranges[:, 1])
 
-        self.state = numpy.zeros(3)
+        self.state = numpy.zeros(3, dtype = numpy.float32)
 
     def step(self, action : int) -> tuple[ndarray, float, bool, dict[None, None]]:
         sign = action - 1
 
         y, x, phi = self.state
 
-        self.state = numpy.array([
-            y + self.speed * numpy.sin(phi),
-            x + self.speed * numpy.cos(phi),
-            phi + self.ang_speed * sign,
-        ])
+        self.state = numpy.array(
+            [
+                y + self.speed * numpy.sin(phi),
+                x + self.speed * numpy.cos(phi),
+                phi + self.ang_speed * sign,
+            ],
+            dtype = numpy.float32
+        )
 
         distance = numpy.sqrt(numpy.sum((numpy.array([y, x]) - self.end) ** 2))
 
         if distance < 1:
-            reward = 1000
+            reward = 1000.
             done = True
         elif distance >= 100:
             # Out of bounds
-            reward = -1000
+            reward = -1000.
             done = True
         else:
             reward = -0.1
@@ -76,20 +79,21 @@ class SkatingRinkEnv(gym.Env):
         return self.state, reward, done, {}
 
     def eval(self, model : nn.Module):
+        self.reset()
         with torch.no_grad():
             for e in range(1, 100 + 1):
-                q_values = model(torch.FloatTensor(self.state).unsqueeze(0).to(device)).squeeze().cpu().numpy()
+                q_values = model(tensor(self.state, device = device).unsqueeze(0).to(device)).squeeze().cpu().numpy()
                 action = q_values.argmax()
                 _, reward, done, _ = self.step(action)
 
-                print(f'{e:02d}: {self.state[0]:g} {self.state[1]:g} {self.state[2]:g}: {action}')
+                print(f'{e:-2d}: {self.state[0]:-3.3f} {self.state[1]:-3.3f} {self.state[2]:-3.3f} -> {action}')
                 if done:
                     break
             else:
                 print('Never finished :-(')
 
     def reset(self) -> ndarray:
-        self.state = numpy.zeros(3)
+        self.state = numpy.zeros(3, dtype = numpy.float32)
         return self.state
 
 class DQN(nn.Module):
@@ -154,13 +158,11 @@ class Trainer:
         episode_rewards = 0
 
         for e in range(0, 1000):
-            # print(state.shape)
-
             if random.random() < epsilon:
                 action = self.env.action_space.sample()
             else:
                 with torch.no_grad():
-                    state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
+                    state_tensor = tensor(state, device = device).unsqueeze(0)
                     action = self.model(state_tensor).argmax().item()
 
             next_state, reward, done, _ = self.env.step(action)
@@ -174,11 +176,11 @@ class Trainer:
                 batch = self.replay_buffer.sample(batch_size)
                 batch_states_raw, batch_actions_raw, batch_rewards_raw, batch_next_states_raw, batch_dones_raw = zip(*batch)
 
-                batch_states = torch.FloatTensor(numpy.array(batch_states_raw)).to(device)
-                batch_actions = torch.LongTensor(numpy.array(batch_actions_raw)).to(device)
-                batch_rewards = torch.FloatTensor(numpy.array(batch_rewards_raw)).to(device)
-                batch_next_states = torch.FloatTensor(numpy.array(batch_next_states_raw)).to(device)
-                batch_dones = torch.FloatTensor([float(x) for x in numpy.array(batch_dones_raw)]).to(device)
+                batch_states = tensor(array(batch_states_raw), dtype = torch.float32, device = device)
+                batch_actions = tensor(batch_actions_raw, dtype = torch.int64, device = device)
+                batch_rewards = tensor(batch_rewards_raw, device = device)
+                batch_next_states = tensor(array(batch_next_states_raw), dtype = torch.float32, device = device)
+                batch_dones = tensor([float(x) for x in numpy.array(batch_dones_raw)], device = device)
 
                 current_q = self.model(batch_states).gather(1, batch_actions.unsqueeze(1)).squeeze(1)
 
