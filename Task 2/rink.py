@@ -31,6 +31,7 @@ class SkatingRinkEnv(gym.Env):
         'right': 2,
     }
 
+    # phi = direction faced by agent
     state_vars = {
         'y': 0,
         'x': 1,
@@ -39,7 +40,10 @@ class SkatingRinkEnv(gym.Env):
 
     def __init__(self):
         super(SkatingRinkEnv, self).__init__()
+
+        # 3 discrete action spaces
         self.action_space = spaces.Discrete(len(self.actions))
+
 
         space_range = (-100, 100)
         angle_range = (-numpy.pi, numpy.pi)
@@ -47,6 +51,7 @@ class SkatingRinkEnv(gym.Env):
         ranges = numpy.array([space_range, space_range, angle_range])
         self.observation_space = spaces.Box(low = ranges[:, 0], high = ranges[:, 1])
 
+        # 3 State spaces (y, x, phi)
         self.state = numpy.zeros(3)
 
     def step(self, action : int) -> tuple[ndarray, float, bool, dict[None, None]]:
@@ -54,15 +59,19 @@ class SkatingRinkEnv(gym.Env):
 
         y, x, phi = self.state
 
+        # Calculate next state y', x' and phi' using trigonometric functions
         self.state = numpy.array([
             y + self.speed * numpy.sin(phi),
             x + self.speed * numpy.cos(phi),
             phi + self.ang_speed * sign,
         ])
 
+        # Distance of agent towards end goal
         distance = numpy.sqrt(numpy.sum((numpy.array([y, x]) - self.end) ** 2))
 
+        # Calculate termination states
         if distance < 1:
+            # Reached endpoint
             reward = 1000
             done = True
         elif distance >= 100:
@@ -76,6 +85,7 @@ class SkatingRinkEnv(gym.Env):
         return self.state, reward, done, {}
 
     def eval(self, model : nn.Module):
+        # Evaluation of model for testing phase only
         with torch.no_grad():
             for e in range(1, 100 + 1):
                 q_values = model(torch.FloatTensor(self.state).unsqueeze(0).to(device)).squeeze().cpu().numpy()
@@ -93,11 +103,11 @@ class SkatingRinkEnv(gym.Env):
         return self.state
 
 class DQN(nn.Module):
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_dim, output_dim, hidden_1=64, hidden_2=64):
         super(DQN, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 64)
-        self.fc2 = nn.Linear(64, 64)
-        self.fc3 = nn.Linear(64, output_dim)
+        self.fc1 = nn.Linear(input_dim, hidden_1)
+        self.fc2 = nn.Linear(hidden_1, hidden_2)
+        self.fc3 = nn.Linear(hidden_2, output_dim)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
@@ -130,16 +140,20 @@ class Trainer:
 
     replay_buffer : ReplayBuffer
 
-    def __init__(self, env : gym.Env, model : nn.Module, target_model : nn.Module, optimizer : optim.Adam):
+    def __init__(self, env : gym.Env, model : nn.Module, target_model : nn.Module, optimizer : optim.Adam, batch_size : int, gamma : float, max_steps : int):
         self.env = env
         self.model = model
         self.target_model = target_model
         self.optimizer = optimizer
-        self.loss_fn = nn.MSELoss()
+        self.loss_fn = nn.SmoothL1Loss()
 
         self.eps_start = 1.0
         self.eps_end = 0.01
         self.eps_decay = 500
+        
+        self.batch_size = batch_size
+        self.gamma = gamma
+        self.max_steps = max_steps
 
         self.replay_buffer = ReplayBuffer(10000)
 
@@ -147,15 +161,15 @@ class Trainer:
         return self.eps_end + (self.eps_start - self.eps_end) * numpy.exp(-1. * episode / self.eps_decay)
 
     def train_episode(self, epsilon : float) -> None | int:
-        batch_size = 64
-        gamma = 0.99
+        batch_size = self.batch_size
+        gamma = self.gamma
 
         state = self.env.reset()
         episode_rewards = 0
 
-        for e in range(0, 1000):
-            # print(state.shape)
-
+        for e in range(0, self.max_steps):
+            
+            # Regular DQN Training
             if random.random() < epsilon:
                 action = self.env.action_space.sample()
             else:
@@ -195,8 +209,7 @@ class Trainer:
         else:
             return None
 
-    def train(self):
-        episodes = 10
+    def train(self, episodes=10):
 
         for episode in range(1, episodes + 1):
             eps = self.eps_by_episode(episode)
@@ -208,11 +221,16 @@ class Trainer:
 
 def main():
     env = SkatingRinkEnv()
+    lr = 0.01
+    batch_size = 64
+    gamma = 0.001
+    max_steps = 500
+    episodes = 1000
     model = DQN(env.observation_space.shape[0], output_dim = env.action_space.n).to(device)
     target_model = DQN(env.observation_space.shape[0], output_dim = env.action_space.n)
-    optimizer = optim.Adam(model.parameters(), lr = .001)
+    optimizer = optim.Adam(model.parameters(), lr = lr)
 
-    Trainer(env, model, target_model, optimizer).train()
+    Trainer(env, model, target_model, optimizer, batch_size, gamma, max_steps).train(episodes)
     env.eval(model)
 
 if __name__ == '__main__':
