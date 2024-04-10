@@ -12,8 +12,6 @@ class SkatingRinkEnv(Env):
     speed = .25
     ang_speed = 1/10 * (2 * numpy.pi)
 
-    end: ndarray
-
     actions_n = 3
     actions = {
         'left': 0,
@@ -28,11 +26,14 @@ class SkatingRinkEnv(Env):
         'phi': 2,
     }
 
-    def __init__(self, config):
-        super().__init__()
+    win_distance: int
+    lose_distance: int
+    max_eval_steps: int
 
-        self.config = config
-        self.end = config['end']
+    def __init__(self, config):
+        self.win_distance = config['win_distance']
+        self.lose_distance = config['lose_distance']
+        self.max_eval_steps = config['max_eval_steps']
 
     @staticmethod
     def torch_choice(*args : tuple[tensor, tensor], else_action: tensor) -> tensor:
@@ -55,10 +56,10 @@ class SkatingRinkEnv(Env):
             ]
         ).T
 
-        distances = (new_states[:, 0:2] - tensor(self.end).to(device)).square().sum(axis = 1).sqrt()
+        distances = new_states[:, 0:2].square().sum(axis = 1).sqrt()
 
-        in_win_range = distances < self.config['win_distance']
-        out_play_range = distances >= self.config['lose_distance']
+        in_win_range = distances < self.win_distance
+        out_play_range = distances >= self.lose_distance
 
         rewards = self.torch_choice(
             (in_win_range, 10000.),
@@ -74,37 +75,31 @@ class SkatingRinkEnv(Env):
 
         return new_states, rewards, dones
 
-    def eval(self, model: nn.Module, debug = True) -> bool:
-        state = self.zeros(1)
-        with torch.no_grad():
-            for e in range(1, 1 + self.config['max_eval_steps']):
-                q_values = model(state)
-                action = q_values.max(dim = 1)[1]
+    @torch.no_grad()
+    def eval(self, model: nn.Module, state = None, debug = False) -> bool:
+        if state is None:
+            state = self.zeros(1)
 
-                new_state, _, done = self.steps(state, action)
+        for e in range(1, 1 + self.max_eval_steps):
+            q_values = model(state)
+            action = q_values.max(dim = 1)[1]
 
-                dist = (((state[0][0] - 2) ** 2 + (state[0][1] - 2) ** 2) ** (1/2))
-                ang = (math.atan2(state[0][0] - 2, state[0][1] - 2) / numpy.pi)
+            if debug:
+                dist = (state[0][0] ** 2 + state[0][1] ** 2) ** (1/2)
+                ang = math.atan2(state[0][0], state[0][1]) / numpy.pi
+                print(f'{e:-2d}: [{state[0][0]: 3.3f} {state[0][1]: 3.3f} {state[0][2]: 3.3f}] [{dist: 3.3f} {ang: 3.3f}] -> {action.item()}')
 
+            state, _, done = self.steps(state, action)
+            if done.all():
                 if debug:
-                    print(f'{e:-2d}: [{state[0][0]: 3.3f} {state[0][1]: 3.3f} {state[0][2]: 3.3f}] [{dist: 3.3f} {ang: 3.3f}] -> {action.item()}')
-
-                if done.all():
-                    if debug:
-                        print('Finished:-)')
-                    return True
-
-                state = new_state
+                    print('Finished :-)')
+                return True
 
         if debug:
             print('Never finished:-(')
 
         return False
 
-    def reset(self) -> ndarray:
-        self.state = numpy.zeros(3, dtype = numpy.float32)
-        return self.state
-
     @classmethod
     def zeros(cls, batch_size: int) -> tensor:
-        return torch.zeros((batch_size, len(cls.state_vars)), device = device)
+        return torch.zeros((batch_size, cls.state_n)).to(device)

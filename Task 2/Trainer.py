@@ -2,6 +2,8 @@ import gymnasium as gym
 import numpy
 import torch
 
+from ReplayBuffer import ReplayBuffer
+
 from torch import nn, optim, tensor, LongTensor, FloatTensor, BoolTensor
 from typing import Any
 
@@ -18,6 +20,11 @@ class Trainer:
     eps_end: float
     eps_decay: float
 
+    batch_size: int
+    actions_size: int
+    train_steps: int
+    buf_multiplier: int
+
     def __init__(self, config : dict[str, Any], env: gym.Env, model: nn.Module, optimizer: optim.Adam):
         self.env = env
         self.model = model
@@ -31,50 +38,43 @@ class Trainer:
         self.eps_end = self.config['eps_end']
         self.eps_decay = self.config['eps_decay']
 
+        self.batch_size = self.config['batch_size']
+        self.actions_size = self.config['actions_size']
+        self.train_steps = self.config['train_steps']
+        self.buf_multiplier = self.config['buf_multiplier']
+
     def eps_by_episode(self, episode: int) -> float:
         return self.eps_end + (self.eps_start - self.eps_end) * numpy.exp(-1. * episode / self.eps_decay)
 
     @torch.no_grad()
-    def choose_action(self, epsilon: float, states : tensor):
-        size = (states.shape[0], )
+    def choose_action(self, epsilon: float, states: tensor) -> tensor:
+        size = (states.shape[0],)
         probs = tensor(numpy.random.choice([False, True], p = [epsilon, 1 - epsilon], size = size)).to(device)
         explorations = torch.randint(0, self.env.actions_n, size).to(device)
         explotations = self.model(states).argmax(1)
         return torch.where(probs, explotations, explorations)
 
     def train_episode(self, epsilon: float) -> tuple[float, int, int]:
-        batch_size = self.config['batch_size']
-        actions_size = self.config['actions_size']
-        train_steps = self.config['train_steps']
-        buf_multiplier = self.config['buf_multiplier']
-
-        states = self.env.zeros(batch_size)
-        rewards = numpy.zeros(batch_size)
+        states = self.env.zeros(self.batch_size)
 
         total_loss = tensor(.0)
-
-        replays = (FloatTensor().to(device), LongTensor().to(device), FloatTensor().to(device), FloatTensor().to(device), BoolTensor().to(device))
+        replays = ReplayBuffer(self.actions_size * self.buf_multiplier)
 
         total_wins = 0
         total_dones = 0
-        for e in range(0, train_steps):
+        for e in range(0, self.train_steps):
             actions = self.choose_action(epsilon, states)
             new_states, rewards, dones = self.env.steps(states, actions)
 
             total_wins += torch.sum(dones & (rewards > 1000))
             total_dones += dones.sum()
 
-            tup = (states, actions, new_states, rewards, dones)
-            replays = tuple(torch.cat([replays[e], tup[e]])[-1 * buf_multiplier * actions_size:] for e in range(5))
+            replays.add(states, actions, new_states, rewards, dones)
 
             states = new_states[~dones]
+            total_loss += self.commit_gradient(*replays.sample(self.actions_size))
 
-            n_replays = replays[0].shape[0]
-            used_replays_idx = numpy.random.randint(n_replays, size = actions_size)
-            used_replays = tuple(replays[i][used_replays_idx] for i in range(5))
-            total_loss += self.commit_gradient(*used_replays)
-
-            if states.shape[0] == 0:
+            if total_dones == self.batch_size:
                 break
 
         return total_loss, total_wins, total_dones

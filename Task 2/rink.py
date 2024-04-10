@@ -11,7 +11,6 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 config = dict(
     hidden_size = 30,
 
-    end = (2, 2),
     win_distance = 1,
     lose_distance = 7,
     max_eval_steps = 10,
