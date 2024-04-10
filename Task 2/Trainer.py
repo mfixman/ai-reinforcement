@@ -55,7 +55,7 @@ class Trainer:
         return torch.where(probs, explotations, explorations)
 
     def train_episode(self, epsilon: float) -> tuple[float, int, int]:
-        states = self.env.zeros(self.batch_size)
+        states = self.env.dropin(self.batch_size)
 
         total_loss = tensor(.0)
         replays = ReplayBuffer(self.actions_size * self.buf_multiplier)
@@ -89,6 +89,7 @@ class Trainer:
             expected_q = rewards + gamma * next_q * ~dones
 
         current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+
         loss = self.loss_fn(current_q, expected_q)
 
         loss.backward()
@@ -103,5 +104,5 @@ class Trainer:
             eps = self.eps_by_episode(episode)
             loss, wins, dones = self.train_episode(eps)
 
-            passes = self.env.eval(self.model, debug = episode % 10 == 0)
+            passes = self.env.eval(self.model, debug = episode % 100 == 0)
             print(f"Episode: {episode:-2d} {'Yes!' if passes else 'Nope'}, Eps = {eps:.2f}, Total Wins: {wins:5g}, Total Dones: {dones:5g}")

@@ -13,18 +13,18 @@ config = dict(
 
     win_distance = 1,
     lose_distance = 7,
-    max_eval_steps = 10,
+    max_eval_steps = 100,
 
     eps_start = 1,
     eps_end = .1,
-    eps_decay = 100,
+    eps_decay = 400,
 
     batch_size = 1000,
     actions_size = 1000,
     buf_multiplier = 100,
     train_steps = 100,
 
-    train_episodes = 300,
+    train_episodes = 1000,
     gamma = .9,
     eval_steps = 500,
 )

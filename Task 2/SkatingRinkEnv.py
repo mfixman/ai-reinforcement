@@ -78,7 +78,7 @@ class SkatingRinkEnv(Env):
     @torch.no_grad()
     def eval(self, model: nn.Module, state = None, debug = False) -> bool:
         if state is None:
-            state = self.zeros(1)
+            state = self.dropin(1)
 
         for e in range(1, 1 + self.max_eval_steps):
             q_values = model(state)
@@ -87,12 +87,19 @@ class SkatingRinkEnv(Env):
             if debug:
                 dist = (state[0][0] ** 2 + state[0][1] ** 2) ** (1/2)
                 ang = math.atan2(state[0][0], state[0][1]) / numpy.pi
-                print(f'{e:-2d}: [{state[0][0]: 3.3f} {state[0][1]: 3.3f} {state[0][2]: 3.3f}] [{dist: 3.3f} {ang: 3.3f}] -> {action.item()}')
+                print(f'{e:-2d}: [{state[0][0]: 3.3f} {state[0][1]: 3.3f} {state[0][2] / numpy.pi: 3.3f}] [{dist: 3.3f} {ang: 3.3f}] -> {action.item()}')
 
-            state, _, done = self.steps(state, action)
+            state, reward, done = self.steps(state, action)
             if done.all():
                 if debug:
-                    print('Finished :-)')
+                    dist = (state[0][0] ** 2 + state[0][1] ** 2) ** (1/2)
+                    ang = math.atan2(state[0][0], state[0][1]) / numpy.pi
+                    print(f' F: [{state[0][0]: 3.3f} {state[0][1]: 3.3f} {state[0][2] / numpy.pi: 3.3f}] [{dist: 3.3f} {ang: 3.3f}] -> {action.item()}')
+                    if reward > 0:
+                        print('Win :-)')
+                    else:
+                        print('Lose :-(')
+
                 return True
 
         if debug:
@@ -103,3 +110,11 @@ class SkatingRinkEnv(Env):
     @classmethod
     def zeros(cls, batch_size: int) -> tensor:
         return torch.zeros((batch_size, cls.state_n)).to(device)
+
+    def dropin(self, batch_size: int) -> tensor:
+        dist = self.lose_distance / 2
+
+        ys = torch.rand(batch_size) * (2 * dist) - dist
+        xs = torch.rand(batch_size) * (2 * dist) - dist
+        phis = torch.rand(batch_size) * (2 * numpy.pi) - numpy.pi
+        return torch.stack([ys, xs, phis]).T.to(device)
