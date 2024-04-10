@@ -83,11 +83,11 @@ class SkatingRinkEnv(Env):
 
                 new_state, _, done = self.steps(state, action)
 
-                dist = ((state[0][0] - 2) ** 2 + (state[0][1] - 2) ** 2) ** (1/2)
-                ang = math.atan2(state[0][0] - 2, state[0][1] - 2) / numpy.pi
+                dist = (((state[0][0] - 2) ** 2 + (state[0][1] - 2) ** 2) ** (1/2))
+                ang = (math.atan2(state[0][0] - 2, state[0][1] - 2) / numpy.pi)
 
                 if debug:
-                    print(f'{e:-2d}: [{self.state[0]: 3.3f} {self.state[1]: 3.3f} {self.state[2]: 3.3f}] [{dist: 3.3f} {ang: 3.3f}] -> {action}')
+                    print(f'{e:-2d}: [{state[0][0]: 3.3f} {state[0][1]: 3.3f} {state[0][2]: 3.3f}] [{dist: 3.3f} {ang: 3.3f}] -> {action.item()}')
 
                 if done.all():
                     if debug:
