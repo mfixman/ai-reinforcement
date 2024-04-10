@@ -8,13 +8,34 @@ from Trainer import Trainer
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def main():
-    env = SkatingRinkEnv()
-    model = DQN(env.observation_space.shape[0], output_dim = env.action_space.n).to(device)
-    target_model = DQN(env.observation_space.shape[0], output_dim = env.action_space.n)
-    optimizer = optim.Adam(model.parameters(), lr = .001)
+config = dict(
+    hidden_size = 30,
 
-    Trainer(env, model, target_model, optimizer).train()
+    end = (2, 2),
+    win_distance = 1,
+    lose_distance = 7,
+    max_eval_steps = 300,
+
+    eps_start = 1,
+    eps_end = .1,
+    eps_decay = 100,
+
+    batch_size = 1000,
+    actions_size = 1000,
+    buf_multiplier = 100,
+    train_steps = 500,
+
+    train_episodes = 100,
+    gamma = .99,
+    eval_steps = 500,
+)
+
+def main():
+    env = SkatingRinkEnv(config)
+    model = DQN(env.state_n, config['hidden_size'], env.actions_n).to(device)
+    optimizer = optim.AdamW(model.parameters(), lr = .001)
+
+    Trainer(config, env, model, optimizer).train()
     result = env.eval(model, debug = False)
     if result:
         print('Finished!')
