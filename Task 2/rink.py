@@ -14,7 +14,7 @@ config = dict(
     end = (2, 2),
     win_distance = 1,
     lose_distance = 7,
-    max_eval_steps = 300,
+    max_eval_steps = 10,
 
     eps_start = 1,
     eps_end = .1,
@@ -23,10 +23,10 @@ config = dict(
     batch_size = 1000,
     actions_size = 1000,
     buf_multiplier = 100,
-    train_steps = 500,
+    train_steps = 100,
 
-    train_episodes = 100,
-    gamma = .99,
+    train_episodes = 300,
+    gamma = .9,
     eval_steps = 500,
 )
 

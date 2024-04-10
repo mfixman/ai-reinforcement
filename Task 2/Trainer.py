@@ -82,14 +82,15 @@ class Trainer:
     def commit_gradient(self, states, actions, new_states, rewards, dones):
         gamma = self.config['gamma']
 
+        self.optimizer.zero_grad()
+
         with torch.no_grad():
             next_q = self.model(new_states).max(axis = 1)[0]
             expected_q = rewards + gamma * next_q * ~dones
 
         current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
-
-        self.optimizer.zero_grad()
         loss = self.loss_fn(current_q, expected_q)
+
         loss.backward()
         self.optimizer.step()
 
