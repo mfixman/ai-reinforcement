@@ -43,6 +43,10 @@ class SkatingRinkEnv(Env):
 
         return result
 
+    @staticmethod
+    def clip_angle(phis):
+        return phis + (phis.abs() > numpy.pi) * phis.sign() * -numpy.pi
+
     def steps(self, states: tensor, actions: tensor) -> tensor:
         signs = actions - 1
 
@@ -52,7 +56,7 @@ class SkatingRinkEnv(Env):
             [
                 ys + self.speed * torch.sin(phis + d_phis),
                 xs + self.speed * torch.cos(phis + d_phis),
-                phis + d_phis,
+                self.clip_angle(phis + d_phis),
             ]
         ).T
 
@@ -76,7 +80,7 @@ class SkatingRinkEnv(Env):
         return new_states, rewards, dones
 
     @torch.no_grad()
-    def eval(self, model: nn.Module, state = None, debug = False) -> bool:
+    def eval(self, model: nn.Module, state = None, debug = False) -> tuple[int, bool]:
         if state is None:
             state = self.dropin(1)
 
@@ -100,12 +104,12 @@ class SkatingRinkEnv(Env):
                     else:
                         print('Lose :-(')
 
-                return True
+                return reward, True
 
         if debug:
             print('Never finished:-(')
 
-        return False
+        return reward, False
 
     @classmethod
     def zeros(cls, batch_size: int) -> tensor:

@@ -35,9 +35,11 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr = .001)
 
     Trainer(config, env, model, optimizer).train()
-    result = env.eval(model, debug = False)
-    if result:
-        print('Finished!')
+    reward, done = env.eval(model, debug = False)
+    if done and reward > 0:
+        print('Finished and won :-)')
+    elif done and reward < 0:
+        print('Finished and lost :-(((')
     else:
         print('Not finished :-(')
 
