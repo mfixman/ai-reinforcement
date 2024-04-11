@@ -35,7 +35,7 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr = .001)
 
     Trainer(config, env, model, optimizer).train()
-    reward, done = env.eval_single(model, debug = False)
+    reward, done = env.eval_single(model)
     if done and reward > 0:
         print('Finished and won :-)')
         torch.save({'weights': model.state_dict(), 'config': config}, 'ice_skater.pth')

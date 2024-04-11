@@ -55,9 +55,9 @@ class SkatingRinkEnv(Env):
         out_play_range = distances >= self.lose_distance
 
         rewards = self.torch_choice(
-            (in_win_range, 10000.),
-            (out_play_range, -10000.),
-            else_action = tensor(-1.).to(device),
+            (in_win_range, 10000),
+            (out_play_range, -10000),
+            else_action = tensor(-1).to(device),
         )
 
         dones = self.torch_choice(
@@ -80,9 +80,9 @@ class SkatingRinkEnv(Env):
                 self.clip_angle(phis + d_phis),
             ]
         ).T
-        rewards, dones = self.rewards_dones(new_states)
 
         _, finished = self.rewards_dones(states)
+        rewards, dones = self.rewards_dones(new_states)
         return (
             torch.where(finished.unsqueeze(1), states, new_states),
             torch.where(finished, 0, rewards),
@@ -103,7 +103,7 @@ class SkatingRinkEnv(Env):
 
     @torch.no_grad()
     def eval(self, model: nn.Module, state : tensor) -> tuple[tensor, tensor]:
-        rewards = torch.full((state.shape[0],), 0).to(device)
+        rewards = torch.full((state.shape[0],), 0, dtype = torch.long).to(device)
         dones = torch.full((state.shape[0],), False).to(device)
         for e in range(1, 1 + self.max_eval_steps):
             q_values = model(state)
