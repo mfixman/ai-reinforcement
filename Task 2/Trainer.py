@@ -105,4 +105,4 @@ class Trainer:
             loss, wins, dones = self.train_episode(eps)
 
             reward, done = self.env.eval_single(self.model)
-            print(f"Episode: {episode:-2d} {'Yes!' if done and reward > 0 else 'Nope' if done and reward < 0 else 'Sad!'}, Eps = {eps:.2f}, Total Wins: {wins:5g}, Total Dones: {dones:5g}")
+            print(f"Episode: {episode:-2d} {'Yes!' if done and reward > 0 else 'Nope' if done and reward <= 0 else 'Sad!'}, Eps = {eps:.2f}, Total Wins: {wins:5g}, Total Dones: {dones:5g}")

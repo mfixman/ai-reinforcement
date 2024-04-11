@@ -27,11 +27,11 @@ class ReplayBuffer:
         self.add(*[x.unsqueeze(0) for x in args])
 
     def add(self, states, actions, new_states, rewards, dones):
-        self.states.append(states)
-        self.actions.append(actions)
-        self.new_states.append(new_states)
-        self.rewards.append(rewards)
-        self.dones.append(dones)
+        self.states.append(states.detach().clone())
+        self.actions.append(actions.detach().clone())
+        self.new_states.append(new_states.detach().clone())
+        self.rewards.append(rewards.detach().clone())
+        self.dones.append(dones.detach().clone())
 
     def coalesce(self):
         selector = None

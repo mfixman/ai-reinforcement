@@ -83,6 +83,7 @@ class SkatingRinkEnv(Env):
 
         _, finished = self.rewards_dones(states)
         rewards, dones = self.rewards_dones(new_states)
+
         return (
             torch.where(finished.unsqueeze(1), states, new_states),
             torch.where(finished, 0, rewards),
@@ -90,7 +91,7 @@ class SkatingRinkEnv(Env):
         )
 
     @torch.no_grad()
-    def eval_long(self, model : nn.Module, states : tensor) -> ReplayBuffer:
+    def eval(self, model : nn.Module, states : tensor) -> ReplayBuffer:
         ret = ReplayBuffer()
         for e in range(1, 1 + self.max_eval_steps):
             q_values = model(states)
@@ -99,36 +100,26 @@ class SkatingRinkEnv(Env):
             new_states, rewards, dones = self.steps(states, actions)
             ret.add_single(states, actions, new_states, rewards, dones)
 
+            states = new_states
         return ret
 
     @torch.no_grad()
-    def eval(self, model: nn.Module, state : tensor) -> tuple[tensor, tensor]:
-        rewards = torch.full((state.shape[0],), 0, dtype = torch.long).to(device)
-        dones = torch.full((state.shape[0],), False).to(device)
-        for e in range(1, 1 + self.max_eval_steps):
-            q_values = model(state)
-            action = q_values.max(dim = 1)[1]
-
-            state, reward, done = self.steps(state, action)
-            rewards[~dones] += reward[~dones]
-            dones |= done
-
-        return rewards, dones
-
-    @torch.no_grad()
-    def eval_single(self, model : nn.Module) -> tuple[tensor, tensor]:
-        state = self.dropin(1)
-        rewards, dones = self.eval(model, state)
-        return rewards.squeeze(0), dones.squeeze(0)
+    def eval_single(self, model : nn.Module) -> tuple[int, bool]:
+        states, actions, new_states, rewards, dones = self.eval(model, self.dropin(1)).tensors()
+        return rewards.sum().detach().item(), dones.any().detach().item()
 
     @classmethod
     def zeros(cls, batch_size: int) -> tensor:
         return torch.zeros((batch_size, cls.state_n)).to(device)
 
     def dropin(self, batch_size: int) -> tensor:
-        dist = self.lose_distance / 2
+        min_dist = self.win_distance
+        max_dist = self.lose_distance / 2
 
-        ys = torch.rand(batch_size) * (2 * dist) - dist
-        xs = torch.rand(batch_size) * (2 * dist) - dist
+        p = torch.rand(batch_size) * (max_dist - min_dist) + min_dist
+        alpha = torch.rand(batch_size) * (2 * numpy.pi) - numpy.pi
+
+        ys = p * torch.sin(alpha)
+        xs = p * torch.cos(alpha)
         phis = torch.rand(batch_size) * (2 * numpy.pi) - numpy.pi
         return torch.stack([ys, xs, phis]).T.to(device)
