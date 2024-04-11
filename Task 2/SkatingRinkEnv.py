@@ -6,6 +6,8 @@ from gymnasium import spaces, Env
 from numpy import ndarray, array
 from torch import nn, tensor
 
+from ReplayBuffer import ReplayBuffer
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class SkatingRinkEnv(Env):
@@ -47,21 +49,8 @@ class SkatingRinkEnv(Env):
     def clip_angle(phis):
         return phis + (phis.abs() > numpy.pi) * phis.sign() * -numpy.pi
 
-    def steps(self, states: tensor, actions: tensor) -> tensor:
-        signs = actions - 1
-
-        ys, xs, phis = states.T
-        d_phis = self.ang_speed * signs
-        new_states = torch.stack(
-            [
-                ys + self.speed * torch.sin(phis + d_phis),
-                xs + self.speed * torch.cos(phis + d_phis),
-                self.clip_angle(phis + d_phis),
-            ]
-        ).T
-
-        distances = new_states[:, 0:2].square().sum(axis = 1).sqrt()
-
+    def rewards_dones(self, states : tensor) -> tuple[tensor, tensor]:
+        distances = states[:, 0:2].square().sum(axis = 1).sqrt()
         in_win_range = distances < self.win_distance
         out_play_range = distances >= self.lose_distance
 
@@ -77,39 +66,60 @@ class SkatingRinkEnv(Env):
             else_action = tensor(False).to(device),
         )
 
-        return new_states, rewards, dones
+        return rewards, dones
+
+    def steps(self, states: tensor, actions: tensor) -> tuple[tensor, tensor, tensor]:
+        signs = actions - 1
+
+        ys, xs, phis = states.T
+        d_phis = self.ang_speed * signs
+        new_states = torch.stack(
+            [
+                ys + self.speed * torch.sin(phis + d_phis),
+                xs + self.speed * torch.cos(phis + d_phis),
+                self.clip_angle(phis + d_phis),
+            ]
+        ).T
+        rewards, dones = self.rewards_dones(new_states)
+
+        _, finished = self.rewards_dones(states)
+        return (
+            torch.where(finished.unsqueeze(1), states, new_states),
+            torch.where(finished, 0, rewards),
+            torch.where(finished, True, dones),
+        )
 
     @torch.no_grad()
-    def eval(self, model: nn.Module, state = None, debug = False) -> tuple[int, bool]:
-        if state is None:
-            state = self.dropin(1)
+    def eval_long(self, model : nn.Module, states : tensor) -> ReplayBuffer:
+        ret = ReplayBuffer()
+        for e in range(1, 1 + self.max_eval_steps):
+            q_values = model(states)
+            actions = q_values.max(dim = 1)[1]
 
+            new_states, rewards, dones = self.steps(states, actions)
+            ret.add_single(states, actions, new_states, rewards, dones)
+
+        return ret
+
+    @torch.no_grad()
+    def eval(self, model: nn.Module, state : tensor) -> tuple[tensor, tensor]:
+        rewards = torch.full((state.shape[0],), 0).to(device)
+        dones = torch.full((state.shape[0],), False).to(device)
         for e in range(1, 1 + self.max_eval_steps):
             q_values = model(state)
             action = q_values.max(dim = 1)[1]
 
-            if debug:
-                dist = (state[0][0] ** 2 + state[0][1] ** 2) ** (1/2)
-                ang = math.atan2(state[0][0], state[0][1]) / numpy.pi
-                print(f'{e:-2d}: [{state[0][0]: 3.3f} {state[0][1]: 3.3f} {state[0][2] / numpy.pi: 3.3f}] [{dist: 3.3f} {ang: 3.3f}] -> {action.item()}')
-
             state, reward, done = self.steps(state, action)
-            if done.all():
-                if debug:
-                    dist = (state[0][0] ** 2 + state[0][1] ** 2) ** (1/2)
-                    ang = math.atan2(state[0][0], state[0][1]) / numpy.pi
-                    print(f' F: [{state[0][0]: 3.3f} {state[0][1]: 3.3f} {state[0][2] / numpy.pi: 3.3f}] [{dist: 3.3f} {ang: 3.3f}] -> {action.item()}')
-                    if reward > 0:
-                        print('Win :-)')
-                    else:
-                        print('Lose :-(')
+            rewards[~dones] += reward[~dones]
+            dones |= done
 
-                return reward, True
+        return rewards, dones
 
-        if debug:
-            print('Never finished:-(')
-
-        return reward, False
+    @torch.no_grad()
+    def eval_single(self, model : nn.Module) -> tuple[tensor, tensor]:
+        state = self.dropin(1)
+        rewards, dones = self.eval(model, state)
+        return rewards.squeeze(0), dones.squeeze(0)
 
     @classmethod
     def zeros(cls, batch_size: int) -> tensor:

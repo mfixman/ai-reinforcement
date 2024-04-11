@@ -17,14 +17,14 @@ config = dict(
 
     eps_start = 1,
     eps_end = .1,
-    eps_decay = 400,
+    eps_decay = 200,
 
-    batch_size = 1000,
+    batch_size = 4000,
     actions_size = 1000,
     buf_multiplier = 100,
     train_steps = 100,
 
-    train_episodes = 1000,
+    train_episodes = 250,
     gamma = .9,
     eval_steps = 500,
 )
@@ -35,9 +35,10 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr = .001)
 
     Trainer(config, env, model, optimizer).train()
-    reward, done = env.eval(model, debug = False)
+    reward, done = env.eval_single(model, debug = False)
     if done and reward > 0:
         print('Finished and won :-)')
+        torch.save({'weights': model.state_dict(), 'config': config}, 'ice_skater.pth')
     elif done and reward < 0:
         print('Finished and lost :-(((')
     else:
