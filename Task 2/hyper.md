@@ -1,0 +1,14 @@
+* Hidden size = 20
+* End = (2, 2)
+* Target Distance = 1
+* Leaving distance = 5
+* Max Eval Steps = 100
+* eps_start = 1.
+* eps_end = 0
+* eps_decay = 100
+* batch_size = 10000
+* actions_size = 100000
+* buf_multiplier = 100
+* train_steps = 100
+* Gamma = 0.99
+* Episodes = 100

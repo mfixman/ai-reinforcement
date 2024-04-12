@@ -2,7 +2,6 @@ import math
 import numpy
 import torch
 
-from gymnasium import spaces, Env
 from numpy import ndarray, array
 from torch import nn, tensor
 
@@ -10,7 +9,7 @@ from ReplayBuffer import ReplayBuffer
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-class SkatingRinkEnv(Env):
+class SkatingRinkEnv():
     speed = .25
     ang_speed = 1/10 * (2 * numpy.pi)
 
