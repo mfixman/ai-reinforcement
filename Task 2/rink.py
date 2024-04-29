@@ -9,7 +9,7 @@ from Trainer import Trainer
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 config = dict(
-    hidden_size = 30,
+    hidden_size = 64,
 
     win_distance = 1,
     lose_distance = 7,
@@ -17,24 +17,35 @@ config = dict(
 
     eps_start = 1,
     eps_end = .1,
-    eps_decay = 200,
+    eps_decay = 500,
 
-    batch_size = 4000,
+    batch_size = 10,
     actions_size = 1000,
     buf_multiplier = 100,
     train_steps = 100,
 
-    train_episodes = 250,
+    train_episodes = 800,
     gamma = .9,
     eval_steps = 500,
+    
+    max_rewards = 1000,
+    lr = 0.001,
+    update_freq = 50,
+    
+    # DQN = 0, DDQN = 1
+    method = 1,
 )
 
 def main():
     env = SkatingRinkEnv(config)
     model = DQN(env.state_n, config['hidden_size'], env.actions_n).to(device)
-    optimizer = optim.AdamW(model.parameters(), lr = .001)
+    model_target = DQN(env.state_n, config['hidden_size'], env.actions_n).to(device)
+    optimizer = optim.AdamW(model.parameters(), lr = config['lr'])
 
-    Trainer(config, env, model, optimizer).train()
+    #Training Step
+    Trainer(config, env, model, model_target, optimizer).train()
+    
+    #Evaluation Step
     reward, done = env.eval_single(model)
     if done and reward > 0:
         print('Finished and won :-)')

@@ -304,13 +304,10 @@ TSWLatexianTemp*
 */.ipynb_checkpoints/*
 */.jupyter/*
 */.pyenv/*
-Task 2/venv
-Carracing help me.code-workspace
-/Task 2_alt/lib/__pycache__
-/Task 2_alt/lib/__pycache__
-/Task 2_alt/lib/__pycache__
 
 *.pth
 __pycache__/
 .jupyter/
 .ipynb_checkpoints/
+
+/Individual Task/
