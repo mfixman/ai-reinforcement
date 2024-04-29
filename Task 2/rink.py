@@ -31,6 +31,8 @@ config = dict(
     max_rewards = 1000,
     lr = 0.001,
     update_freq = 50,
+    tau = 1,
+    tau_decay = 0.999,
     
     # DQN = 0, DDQN = 1
     method = 1,

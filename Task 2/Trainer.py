@@ -50,6 +50,7 @@ class Trainer:
         
         self.max_rewards = self.config['max_rewards']
         self.train_episodes = self.config['train_episodes']
+        self.tau = self.config['tau']
         self.q_log = []
 
     def eps_by_episode(self, episode: int) -> float:
@@ -87,9 +88,24 @@ class Trainer:
             q_step_log[e] = torch.mean(q_step, dim=0)
             if total_dones == self.batch_size:
                 break
+            
+            # Update target model every m steps
+            if e % self.config['update_freq'] == 0:
+                self.update_target()
+            
+            # Decay Tau
+            self.tau *= self.config['tau_decay']
+                
         return total_loss, total_wins, total_dones, torch.mean(q_step_log, dim=0)
 
     def commit_gradient(self, states, actions, new_states, rewards, dones):
+        # Input variables:
+        # states: current available states
+        # actions: actions selected based on Boltzmann policy with respect to epsilon and model policy
+        # new_states: new states obtained from selecting the action
+        # rewards: rewards obtained from the state action pair
+        # dones: binary value with dimensions [1, batch_size] depecting which run has finished in the batch
+        
         gamma = self.config['gamma']
         
         
@@ -103,8 +119,10 @@ class Trainer:
             else:
                 next_q = self.model(new_states).max(axis = 1)[0]
                 
+            # Expected Q is a function with respect to model policy or target policy, depending on method
             expected_q = rewards + gamma * next_q * ~dones
 
+        # Q value from 
         current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
 
         loss = self.loss_fn(current_q, expected_q)
@@ -115,7 +133,11 @@ class Trainer:
         return loss.detach().cpu(), expected_q
     
     def update_target(self):
-        self.model_target.load_state_dict(self.model.state_dict())
+        model_state_dict = self.model.state_dict()
+        target_state_dict = self.model_target.state_dict()
+        for param in target_state_dict:
+            target_state_dict[param] = model_state_dict[param] * self.tau + target_state_dict[param]
+        self.model_target.load_state_dict(target_state_dict)
 
     def train(self):
         episodes = self.train_episodes
@@ -123,7 +145,6 @@ class Trainer:
             eps = self.eps_by_episode(episode)
             loss, wins, dones, q_step_log = self.train_episode(eps, self.config['method'])
             self.q_log.append(q_step_log)
-            print(torch.mean(q_step_log, dim=0))
             reward, done = self.env.eval_single(self.model)
             print(f"Episode: {episode:-2d} {'Yes!' if done and reward > 0 else 'Nope' if done and reward <= 0 else 'Sad!'}, Epsilon = {eps:.2f}, Total Wins: {wins:5g}, Total Terminations: {dones:5g}, Loss : {loss:.4f}")
             self.plot()
