@@ -31,6 +31,9 @@ class Trainer:
         self.model = model
         self.model_target = model_target
         self.model_target.load_state_dict(self.model.state_dict())
+        
+        # Target model shouldnt be updated
+        self.model_target.eval()
         self.config = config
 
         self.optimizer = optimizer
@@ -45,13 +48,14 @@ class Trainer:
         self.train_steps = self.config['train_steps']
         self.buf_multiplier = self.config['buf_multiplier']
         
-        # 0 = DQN, 1 = DDQN
+        # DQN = 0, Target Network Method = 1, DDQN = 2
         self.method = self.config['method']
         
         self.max_rewards = self.config['max_rewards']
         self.train_episodes = self.config['train_episodes']
         self.tau = self.config['tau']
         self.q_log = []
+        
 
     def eps_by_episode(self, episode: int) -> float:
         return self.eps_end + (self.eps_start - self.eps_end) * numpy.exp(-1. * episode / self.eps_decay)
@@ -111,15 +115,26 @@ class Trainer:
         
         self.optimizer.zero_grad()
 
-        with torch.no_grad():
+        # with torch.no_grad(): # needs grad to back propagate
             
-            # Get q values of the target model if DDQN is selected, else get q values of original model
-            if(self.method == 1):
-                next_q = self.model_target(new_states).max(axis = 1)[0]
-            else:
-                next_q = self.model(new_states).max(axis = 1)[0]
-                
-            # Expected Q is a function with respect to model policy or target policy, depending on method
+        # Get q values of the target model if Target Network/DDQN is selected, else get q values of original model
+        if(self.method == 1):
+            # For Target Network method, simply evaluate the action of the MAIN network
+            # using the TARGET network
+            next_q = self.model_target(new_states).max(axis = 1)[0]
+        elif(self.method == 2):
+            # For DDQN, MAIN network is used to select action
+            next_model_action = self.model(new_states).max(axis = 1)[1]
+            
+            # TARGET network is used to evaluate the action of the MAIN network
+            next_q =torch.gather(self.model_target(new_states), 1, next_model_action.unsqueeze(1))[~dones]
+        else:
+            next_q = self.model(new_states).max(axis = 1)[0]
+            
+        # Expected Q is a function with respect to model policy or target policy, depending on method
+        if(self.method == 2):
+            expected_q = rewards + gamma
+        else:
             expected_q = rewards + gamma * next_q * ~dones
 
         # Q value from 
@@ -136,15 +151,16 @@ class Trainer:
         model_state_dict = self.model.state_dict()
         target_state_dict = self.model_target.state_dict()
         for param in target_state_dict:
-            target_state_dict[param] = model_state_dict[param] * self.tau + target_state_dict[param]
+            target_state_dict[param] = model_state_dict[param] * self.tau + target_state_dict[param] * (1 - self.tau)
         self.model_target.load_state_dict(target_state_dict)
+        self.model_target.eval()
 
     def train(self):
         episodes = self.train_episodes
         for episode in range(1, episodes + 1):
             eps = self.eps_by_episode(episode)
             loss, wins, dones, q_step_log = self.train_episode(eps, self.config['method'])
-            self.q_log.append(q_step_log)
+            self.q_log.append(q_step_log.detach().numpy())
             reward, done = self.env.eval_single(self.model)
             print(f"Episode: {episode:-2d} {'Yes!' if done and reward > 0 else 'Nope' if done and reward <= 0 else 'Sad!'}, Epsilon = {eps:.2f}, Total Wins: {wins:5g}, Total Terminations: {dones:5g}, Loss : {loss:.4f}")
             self.plot()
