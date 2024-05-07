@@ -1,8 +1,8 @@
-import gymnasium as gym
 import numpy
 import torch
 import matplotlib.pyplot as plt
 
+from SkatingRinkEnv import SkatingRinkEnv
 from ReplayBuffer import ReplayBuffer
 
 from torch import nn, optim, tensor, LongTensor, FloatTensor, BoolTensor
@@ -11,7 +11,7 @@ from typing import Any
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class Trainer:
-    env: gym.Env
+    env: SkatingRinkEnv
     model: nn.Module
     optimizer: optim.Adam
 
@@ -26,7 +26,7 @@ class Trainer:
     train_steps: int
     buf_multiplier: int
 
-    def __init__(self, config : dict[str, Any], env: gym.Env, model: nn.Module, model_target: nn.Module, optimizer: optim.Adam):
+    def __init__(self, config : dict[str, Any], env: SkatingRinkEnv, model: nn.Module, model_target: nn.Module, optimizer: optim.Adam):
         self.env = env
         self.model = model
         self.model_target = model_target
