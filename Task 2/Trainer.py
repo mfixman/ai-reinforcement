@@ -27,6 +27,9 @@ class Trainer:
     buf_multiplier: int
 
     def __init__(self, config : dict[str, Any], env: SkatingRinkEnv, model: nn.Module, model_target: nn.Module, optimizer: optim.Adam):
+        if device == 'cpu':
+            print('Warning! Using CPU')
+
         self.env = env
         self.model = model
         self.model_target = model_target
@@ -55,7 +58,6 @@ class Trainer:
         self.train_episodes = self.config['train_episodes']
         self.tau = self.config['tau']
         self.q_log = []
-        
 
     def eps_by_episode(self, episode: int) -> float:
         return self.eps_end + (self.eps_start - self.eps_end) * numpy.exp(-1. * episode / self.eps_decay)
@@ -166,6 +168,8 @@ class Trainer:
             self.plot()
             
     def plot(self):
+        return
+
         plt.figure(1)
         plt.clf()
         plt.plot(self.q_log)
