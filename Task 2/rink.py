@@ -19,7 +19,7 @@ config = dict(
     eps_end = .1,
     eps_decay = 500,
 
-    batch_size = 10,
+    batch_size = 5000,
     actions_size = 1000,
     buf_multiplier = 100,
     train_steps = 100,

@@ -164,7 +164,7 @@ class Trainer:
             loss, wins, dones, q_step_log = self.train_episode(eps, self.config['method'])
             self.q_log.append(q_step_log.detach().numpy())
             reward, done = self.env.eval_single(self.model)
-            print(f"Episode: {episode:-2d} {'Yes!' if done and reward > 0 else 'Nope' if done and reward <= 0 else 'Sad!'}, Epsilon = {eps:.2f}, Total Wins: {wins:5g}, Total Terminations: {dones:5g}, Loss : {loss:.4f}")
+            print(f"Episode: {episode:-2d}\t{'Yes!' if done and reward > 0 else 'Nope' if done and reward <= 0 else 'Sad!'}\tEps = {eps:.2f}\tWins: {wins:5g}\tFinish: {dones:5g}\tLoss: {int(loss):-9d}")
             self.plot()
             
     def plot(self):

@@ -5,6 +5,8 @@ from torch import tensor, FloatTensor, LongTensor, BoolTensor
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+State = tuple[FloatTensor, LongTensor, FloatTensor, LongTensor, BoolTensor]
+
 class ReplayBuffer:
     states: list[FloatTensor]
     actions: list[LongTensor]
@@ -44,16 +46,16 @@ class ReplayBuffer:
         self.rewards = [torch.cat(self.rewards)[selector:]]
         self.dones = [torch.cat(self.dones)[selector:]]
 
-    def sample(self, amount: int) -> tuple[tensor, tensor, tensor, tensor, tensor]:
+    def sample(self, amount: int) -> State:
         self.coalesce()
         replays_idx = numpy.random.randint(0, self.states[0].shape[0], size = amount)
         return tuple(x[replays_idx] for x in self.tensors())
 
-    def tensors(self) -> tuple[tensor, tensor, tensor, tensor, tensor]:
+    def tensors(self) -> State:
         self.coalesce()
         return self.states[0], self.actions[0], self.new_states[0], self.rewards[0], self.dones[0]
 
-    def shape(self) -> tuple:
+    def shape(self) -> tuple[int]:
         smallest = min(len(x.shape) for x in self.tensors())
         shapes = [x.shape[:smallest] for x in self.tensors()]
         if len(set(shapes)) != 1:
