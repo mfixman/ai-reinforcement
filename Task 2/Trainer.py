@@ -11,6 +11,11 @@ from typing import Any
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class Trainer:
+    DQN = 'DQN'
+    TargetNetwork = 'TargetNetwork'
+    DoubleDQN = 'DDQN'
+    Methods = [DQN, TargetNetwork, DoubleDQN]
+
     env: SkatingRinkEnv
     model: nn.Module
     optimizer: optim.Adam
@@ -113,35 +118,28 @@ class Trainer:
         # dones: binary value with dimensions [1, batch_size] depecting which run has finished in the batch
         
         gamma = self.config['gamma']
-        
-        
         self.optimizer.zero_grad()
 
         # with torch.no_grad(): # needs grad to back propagate
-            
         # Get q values of the target model if Target Network/DDQN is selected, else get q values of original model
-        if(self.method == 1):
-            # For Target Network method, simply evaluate the action of the MAIN network
-            # using the TARGET network
-            next_q = self.model_target(new_states).max(axis = 1)[0]
-        elif(self.method == 2):
-            # For DDQN, MAIN network is used to select action
-            next_model_action = self.model(new_states).max(axis = 1)[1]
-            
-            # TARGET network is used to evaluate the action of the MAIN network
-            next_q =torch.gather(self.model_target(new_states), 1, next_model_action.unsqueeze(1))[~dones]
-        else:
-            next_q = self.model(new_states).max(axis = 1)[0]
-            
-        # Expected Q is a function with respect to model policy or target policy, depending on method
-        if(self.method == 2):
-            expected_q = rewards + gamma
-        else:
-            expected_q = rewards + gamma * next_q * ~dones
 
-        # Q value from 
+        match self.method:
+            case Trainer.DQN:
+                next_q = self.model(new_states).max(axis = 1)[0]
+                expected_q = rewards + gamma * next_q * ~dones
+            case Trainer.TargetNetwork:
+                # Simply evaluate the action of the MAIN network using the TARGET network
+                next_q = self.model_target(new_states).max(axis = 1)[0]
+                expected_q = rewards + gamma * next_q * ~dones
+            case Trainer.DoubleDQN:
+                # For DDQN, MAIN network is used to select action
+                next_model_action = self.model(new_states).max(axis = 1)[1]
+
+                # TARGET network is used to evaluate the action of the MAIN network
+                next_q =torch.gather(self.model_target(new_states), 1, next_model_action.unsqueeze(1))[~dones]
+                expected_q = rewards + gamma
+
         current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
-
         loss = self.loss_fn(current_q, expected_q)
 
         loss.backward()

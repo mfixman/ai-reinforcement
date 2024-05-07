@@ -1,54 +1,48 @@
+import argparse
 import torch
 
 from torch import optim
 
+from argparse import ArgumentParser
 from DQN import DQN
 from SkatingRinkEnv import SkatingRinkEnv
 from Trainer import Trainer
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-config = dict(
-    hidden_size = 64,
+def parse_args():
+    parser = argparse.ArgumentParser(description = "Setup command line arguments for the model training configuration.")
 
-    win_distance = 1,
-    lose_distance = 7,
-    max_eval_steps = 100,
+    parser.add_argument('--hidden_size', type = int, default = 64, help = 'Size of the hidden layer.')
+    parser.add_argument('--win_distance', type = int, default = 1, help = 'Winning distance.')
+    parser.add_argument('--lose_distance', type = int, default = 7, help = 'Losing distance.')
+    parser.add_argument('--max_eval_steps', type = int, default = 100, help = 'Maximum evaluation steps.')
 
-    eps_start = 1,
-    eps_end = .1,
-    eps_decay = 500,
+    parser.add_argument('--eps_start', type = float, default = 1.0, help = 'Starting value of epsilon.')
+    parser.add_argument('--eps_end', type = float, default = 0.1, help = 'Final value of epsilon.')
+    parser.add_argument('--eps_decay', type = int, default = 500, help = 'Decay rate of epsilon.')
 
-    batch_size = 5000,
-    actions_size = 1000,
-    buf_multiplier = 100,
-    train_steps = 100,
+    parser.add_argument('--batch_size', type = int, default = 5000, help = 'Batch size for training.')
+    parser.add_argument('--actions_size', type = int, default = 1000, help = 'Number of actions.')
+    parser.add_argument('--buf_multiplier', type = int, default = 100, help = 'Buffer size multiplier.')
+    parser.add_argument('--train_steps', type = int, default = 100, help = 'Number of training steps.')
+    parser.add_argument('--train_episodes', type = int, default = 800, help = 'Number of training episodes.')
+    parser.add_argument('--gamma', type = float, default = 0.9, help = 'Discount factor for future rewards.')
+    parser.add_argument('--eval_steps', type = int, default = 500, help = 'Number of evaluation steps.')
 
-    train_episodes = 800,
-    gamma = .9,
-    eval_steps = 500,
-    
-    max_rewards = 1000,
-    lr = 0.001,
-    
-    
-    
-    # How much of target params are copied to the target policy 
-    # (0 = 0% of original policy is copied, 1 = all of original network is copied to target)
-    # tau_decay decays 
-    tau = 1,
-    
-    # Tau decays every train_step by tau *= tau_decay
-    tau_decay = 1,
-    
-    # Update Freq : For Target Network / DDQN; How frequent in train_steps to synchronize target network to original network
-    update_freq = 50,
-    
-    # DQN = 0, Target Network Method = 1, DDQN = 2
-    method = 0,
-)
+    parser.add_argument('--max_rewards', type = int, default = 1000, help = 'Maximum reward.')
+    parser.add_argument('--lr', type = float, default = 0.001, help = 'Learning rate.')
+
+    parser.add_argument('--tau', type = float, default = 1.0, help = 'Target network soft update parameter tau.')
+    parser.add_argument('--tau_decay', type = float, default = 1.0, help = 'Decay rate of tau.')
+    parser.add_argument('--update_freq', type = int, default = 50, help = 'Update frequency for target network.')
+
+    parser.add_argument('--method', type = str, default = Trainer.DQN, choices = Trainer.Methods, help = 'Which learning method to use.')
+
+    return vars(parser.parse_args())
 
 def main():
+    config = parse_args()
     env = SkatingRinkEnv(config)
     model = DQN(env.state_n, config['hidden_size'], env.actions_n).to(device)
     model_target = DQN(env.state_n, config['hidden_size'], env.actions_n).to(device)
