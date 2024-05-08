@@ -56,7 +56,6 @@ class Trainer:
         self.train_steps = self.config['train_steps']
         self.buf_multiplier = self.config['buf_multiplier']
         
-        # DQN = 0, Target Network Method = 1, DDQN = 2
         self.method = self.config['method']
         
         self.max_rewards = self.config['max_rewards']
