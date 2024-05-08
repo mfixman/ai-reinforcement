@@ -1,0 +1,52 @@
+\documentclass{article}
+
+\usepackage{geometry}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{parskip}
+\usepackage{bm}
+\usepackage{amsmath}
+\usepackage{relsize}
+\usepackage{enumitem}
+\usepackage{amsfonts}
+\usepackage{textgreek}
+\usepackage[labelfont=bf,font=footnotesize]{caption}
+\usepackage[hypertexnames=false,hidelinks]{hyperref}
+\usepackage[noabbrev,nameinlink,capitalize,poorman]{cleveref}
+
+% \renewcommand{\thesection}{Task \arabic{section}}
+\renewcommand{\thesubsection}{\arabic{subsection}}
+
+\begin{document}
+
+\begin{titlepage}
+	\centering
+	\includegraphics[width=\textwidth]{City\_logo} \\[4em]
+	\begin{bfseries}
+		\begin{Huge}
+			Deep Reinforcement Learning \\[35pt]
+			\textsl{Written Report}
+		\end{Huge}
+	\end{bfseries}
+	\vfill{}
+	\begin{LARGE}
+		\begin{sffamily}
+			Martin Fixman and Sean Lim \\
+			Sean Lim and Martin Fixman \\
+			2023/2024 Term \\
+		\end{sffamily}
+	\end{LARGE}
+\end{titlepage}
+
+\input{task1.tex}
+
+\clearpage{}
+
+\input{task2.tex}
+
+\clearpage{}
+
+% \bibliography{reinforcement_report.bib}
+
+\end{document}

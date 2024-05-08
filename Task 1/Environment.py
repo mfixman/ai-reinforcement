@@ -141,7 +141,6 @@ class Environment:
         return self.Q, steps
 
     def learn(self, max_epochs : int, alpha : float, gamma : float, epsilon : float, decay_rate : float, max_steps : int) -> int:
-        
         steps_per_epoch = []
         for epoch in range(1, max_epochs + 1):
             old_Q = self.Q.copy()
@@ -198,4 +197,10 @@ class Environment:
             bestMap[y, x] = '●'
             maps.append(bestMap.copy())
 
-        return numpy.array(maps)
+        return maps
+
+    def printBestMap(self):
+        maps = self.getBestMap()
+        for m in maps:
+            print('\n'.join(''.join(r for r in h) for h in m))
+            print()
