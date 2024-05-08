@@ -5,12 +5,16 @@
 \usepackage{graphicx}
 \usepackage{subcaption}
 \usepackage{parskip}
+\usepackage{appendix}
 \usepackage{bm}
 \usepackage{amsmath}
+\usepackage[table,dvipsnames]{xcolor}
 \usepackage{relsize}
 \usepackage{enumitem}
 \usepackage{amsfonts}
 \usepackage{textgreek}
+\usepackage{booktabs}
+\usepackage{array}
 \usepackage{xfrac}
 \usepackage[labelfont=bf,font=footnotesize]{caption}
 \usepackage[hypertexnames=false,hidelinks]{hyperref}
@@ -21,6 +25,8 @@
 
 \newcommand{\argmax}{\text{argmax}}
 \newcommand{\rand}{\text{rand}}
+
+\newcommand{\appendixA}{\hyperref[param_sweep_result_appendix]{Appendix A}}
 
 \begin{document}
 
@@ -50,6 +56,10 @@
 \input{task2.tex}
 
 \clearpage{}
+
+\begin{appendices}
+	\input{task1_param_sweep.tex}
+\end{appendices}
 
 % \bibliography{reinforcement_report.bib}
 

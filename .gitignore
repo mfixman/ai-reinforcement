@@ -311,3 +311,5 @@ __pycache__/
 .ipynb_checkpoints/
 
 /Individual Task/
+
+Report/tex/*
