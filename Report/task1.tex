@@ -71,6 +71,7 @@ The probability next action $a$ is defined depending on the policy used, where $
 \end{gather*}
 
 \subsection{Parameter sweep}
+\label{param_sweep}
 To find the best parameters, we run a parameter sweep on the map in \cref{large_map} for each combination of parameters in \cref{param_sweep_params}; this map is large enough to make it suitable for a parameter sweep.
 
 \begin{table}[h]
@@ -123,3 +124,21 @@ We can observe the following.
 \end{itemize}
 
 We choose the parameter combination that converges the fastest between the ones that \emph{always} found the best solution; that's marked in \colorbox{YellowGreen}{green}.
+
+\subsection{Analysing this solution}
+The solution found in \cref{param_sweep} takes on average 139 epochs to converge.
+Of those, it takes an average of 31.8 epochs to find a solution, and 97 epochs to find \emph{the best} solution.
+Despite taking significantly longer to converge due to its low learning rate, it always finds a suitable solution.
+
+The final Q-matrix allows us to find the step with the highest expected reward.
+
+\renewcommand{\textuparrow}{\ensuremath{\upa{}}}
+\renewcommand{\textdownarrow}{\ensuremath{\downa{}}}
+\renewcommand{\textleftarrow}{\ensuremath{\lefta{}}}
+\renewcommand{\textrightarrow}{\ensuremath{\righta{}}}
+
+\begin{figure}[h]
+	\centering
+	\resizebox{.48\textwidth}{!}{\input{good_task1_map.tikz}}
+	\caption{Example of result after 100 epochs.}
+\end{figure}

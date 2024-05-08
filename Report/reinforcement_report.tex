@@ -1,5 +1,9 @@
 \documentclass{article}
 
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage{tikz}
 \usepackage{geometry}
 \usepackage{microtype}
 \usepackage{graphicx}
@@ -8,6 +12,7 @@
 \usepackage{appendix}
 \usepackage{bm}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage[table,dvipsnames]{xcolor}
 \usepackage{relsize}
 \usepackage{enumitem}
@@ -27,6 +32,13 @@
 \newcommand{\rand}{\text{rand}}
 
 \newcommand{\appendixA}{\hyperref[param_sweep_result_appendix]{Appendix A}}
+
+\usetikzlibrary{matrix}
+\usetikzlibrary{fit}
+\usetikzlibrary{plotmarks}
+\usetikzlibrary{positioning}
+% \usetikzlibrary{external}
+% \tikzexternalize[prefix=tikz/]
 
 \begin{document}
 

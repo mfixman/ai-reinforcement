@@ -225,3 +225,11 @@ class Environment:
         for m in maps:
             print('\n'.join(''.join(r for r in h) for h in m))
             print()
+
+        return len(maps)
+    
+    def printQMatrix(self):
+        Q_map = numpy.nan_to_num(self.Q, nan = -1).argmax(axis = 2)
+        generator = numpy.vectorize(lambda x: self.names.get(x, ' '))
+        for y, row in enumerate(Q_map):
+            print(''.join(self.names[c] if self.canStep(y, x) else 'x' for x, c in enumerate(row)))
