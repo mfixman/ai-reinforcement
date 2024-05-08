@@ -41,12 +41,18 @@ class Environment:
 
     policy : str
 
-    def __init__(self, map, policy = None):
+    def __init__(self, map: list[str], policy: None | str, alpha: float, gamma: float, epsilon: float, decay_rate: float, max_steps: int):
         self.parseMap(map)
 
         self.Q = numpy.random.rand(self.N, self.M, self.D)
         self.Q[self.invalids] = numpy.nan
         self.Q[self.end] = numpy.zeros(self.D)
+
+        self.alpha = alpha
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.decay_rate = decay_rate
+        self.max_steps = max_steps
 
         self.policy = policy or Environment.epsgreedy
 
@@ -109,25 +115,25 @@ class Environment:
             else:
                 self.invalids[y, x, dir] = True
 
-    def getEpsGreedy(self, q, epsilon):
-        # Epsilon Greedy Policy
+    def getEpsGreedy(self, q):
+        # Epsilon-Greedy Policy
         max_a = numpy.nanargmax(q)
         rand_a = numpy.random.choice(numpy.arange(self.D)[~numpy.isnan(q)])
-        return numpy.random.choice([rand_a, max_a], p = [epsilon, 1 - epsilon])
+        return numpy.random.choice([rand_a, max_a], p = [self.epsilon, 1 - self.epsilon])
 
     def getBellman(self, q):
         # Bellman policy: using softmax do determine best action
         p = numpy.nan_to_num(q, nan = 0)
         return numpy.random.choice(numpy.arange(self.D), p = p / p.sum())
 
-    def run(self, alpha : float, gamma : float, epsilon : float, max_steps : int) -> numpy.ndarray:
+    def run(self) -> None | int:
         s = self.start
         steps=0
-        while s != self.end and steps <= max_steps:
+        while s != self.end and steps <= self.max_steps:
             steps+=1
             match self.policy:
                 case Environment.epsgreedy:
-                    a = self.getEpsGreedy(self.Q[s], epsilon)
+                    a = self.getEpsGreedy(self.Q[s])
                 case Environment.bellman:
                     a = self.getBellman(self.Q[s])
                 case _:
@@ -135,26 +141,41 @@ class Environment:
 
             sp = self.transitions[s][a]
             r = self.R[sp]
-            self.Q[s][a] += alpha * (r + gamma * numpy.max(dropNaN(self.Q[sp])) - self.Q[s][a])
+            self.Q[s][a] += self.alpha * (r + self.gamma * numpy.max(dropNaN(self.Q[sp])) - self.Q[s][a])
             s = sp
 
-        return self.Q, steps
+        if s != self.end:
+            return None
 
-    def learn(self, max_epochs : int, alpha : float, gamma : float, epsilon : float, decay_rate : float, max_steps : int) -> int:
+        return steps
+
+    def learn(self, max_epochs: None | int = None, Q_eps: None | float = None) -> tuple[int, list[None | int], list[float]]:
+        epoch = 1
+
+        diff = float('inf')
+        if max_epochs is not None:
+            finished = lambda: epoch > max_epochs
+        elif Q_eps is not None:
+            finished = lambda: diff < Q_eps
+        else:
+            raise ValueError('One of max_epochs and Q_eps must be set.')
+
         steps_per_epoch = []
-        for epoch in range(1, max_epochs + 1):
+        diffs_per_epoch = []
+        while not finished():
             old_Q = self.Q.copy()
-            _,steps=self.run(alpha, gamma, epsilon, max_steps=max_steps)
+            steps = self.run()
+
             diff = numpy.mean(dropNaN(numpy.abs(old_Q - self.Q)))
+
             steps_per_epoch.append(steps)
-            
+            diffs_per_epoch.append(diff)
+
             # Add decay after every epoch
-            epsilon *= decay_rate
-            
-            # Early Stopping
-            # if self.reachesEnd():
-            #     return epoch,steps
-        return epoch,steps_per_epoch
+            self.epsilon *= self.decay_rate
+            epoch += 1
+
+        return epoch, steps_per_epoch, diffs_per_epoch
 
     def reachesEnd(self) -> bool:
         dirs = numpy.argmax(numpy.nan_to_num(self.Q, nan = float('-inf')), axis = 2)

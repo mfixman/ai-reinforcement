@@ -53,15 +53,19 @@ The state function $\state$, along with the transition and reward functions $\ma
 This transition function allows us to define an iterative $Q$ function, which should be used to find the objective $Q^\pi$ function.
 \begin{gather*}
 	s \in \mathcal{S} \qquad a \in \mathcal{D} \\
-	\mathcal{Q}^{k + 1}(s, a) = \alpha \cdot \left( \reward( T( a, s ) ) + \gamma \cdot \max{Q^k(s, a)} \right) - Q^k(s, a)
+	Q^{k + 1}(s, a) = \alpha \cdot \left( \reward( T( a, s ) ) + \gamma \cdot \max{Q^k(s, a)} \right) - Q^k(s, a)
 \end{gather*}
 
 \newpage{}
-The next action $a$ is defined depending on the policy used.
-\begin{description}
-	\item[\textepsilon-Greedy Policy] \phantom{x}
-		\begin{itemize}
-			\item $\mathbb{P}(\varepsilon)$ \qquad Choose a random direction.
-			\item $\mathbb{P}(1 - \varepsilon)$ \quad Greedily choose the $a$ with the highest $Q(s, a)$ with 
-		\end{itemize}
-\end{description}
+The probability next action $a$ is defined depending on the policy used, where $\pi^k(a \mid s)$ represents the probability of choosing action $a$ with state $s$ at point $k$.
+\begin{gather*}
+	\intertext{\textbf{\textepsilon-Greedy Policy}: choose the best policy with probability $\varepsilon$, randomly otherwise.}
+	\pi^k(a \mid s) = 
+		(1 - \varepsilon) \cdot \frac{1}{\mathcal{D}} + \varepsilon \cdot \begin{cases}
+			1 & \text{if } a = \argmax_{a'} (Q^k(s, a')) \\
+			0 & \text{otherwise}
+		\end{cases} \\
+	\intertext{\textbf{Bellman Policy}: choose policy using the softmax of the Q-value}
+	\pi^k(a \mid s) = \frac{e^{Q^k(s, a)}}{\sum_{a' \in \mathcal{D}}{e^{Q^k(s, a')}}}
+\end{gather*}
+

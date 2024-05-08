@@ -27,11 +27,16 @@ def parse_args():
 def parseMap(map_file):
     sourcedir = os.path.dirname(os.path.realpath(__file__))
     lines = open(os.path.join(sourcedir, map_file)).readlines()
-    lines = lines[1:]
+
+    contoured = False
+    if any(c.isnumeric() for c in lines[0]):
+        contoured = True
+        lines = lines[1:]
 
     map = []
     for line in lines:
-        map.append(line[1:-1])
+        init = 1 if contoured else 0
+        map.append(line[init:-1])
 
     return map
 
@@ -40,19 +45,11 @@ def main():
     map = parseMap(args.map_file)
     seaborn.set()
 
-    # plt.figure(figsize=(8,6))
-
     combinations = itertools.product(args.alphas, args.gammas, args.epsilons, args.decay_rates)
     for alpha, gamma, epsilon, decay_rate in combinations:
-        env = Environment(map, policy = args.policy)
-        epochs, steps_per_epoch = env.learn(max_epochs = args.max_epochs, alpha=alpha, gamma=gamma, epsilon=epsilon, decay_rate=decay_rate, max_steps=args.max_steps)
-        # plt.plot(range(max_epochs), steps_per_epoch, label=f'alpha={alpha}, gamma={gamma}, epsilon={epsilon}, decay_rate={decay_rate}, policy={policies[0]}')
-        # plt.title('Q Learning Performance Graph')
-        # plt.xlabel('Episodes')
-        # plt.ylabel('Steps to Reach End Goal')
+        env = Environment(map, policy = args.policy, alpha = alpha, gamma = gamma, epsilon = epsilon, decay_rate = decay_rate, max_steps = args.max_steps)
+        epochs, steps_per_epoch = env.learn(Q_eps = 1e-9)
     
-    # plt.legend()
-    # plt.show()
     env.printBestMap()
     print(f'¡¡¡¡¡Got there in {steps_per_epoch[-1]} steps!!!!!')
 
