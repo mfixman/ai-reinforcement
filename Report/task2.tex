@@ -1,17 +1,17 @@
 \renewcommand{\thesection}{Advanced Task}
 \section{Deep Q Learning}
-The environment used for the Basic Task is too basic to implement Deep Q Learning. Instead, we created a more complicated ice rink environment, taking inspiration from the convept of the environment used in the Basic Task. The agent is now located in a circular environment, whereby the agent is now free to move in any direction, bounded by the linear speed and angular speeds. Furthermore, the agent now has actions "left", "straight" and "right", rather than the conventional 4 directional actions defined before. The state space of the agent is also defined by x, y and phi using the following formula:
+\subsection{Environment}
+The environment used for the Basic Task is too basic to implement Deep Q Learning. Instead, we created a more complicated ice rink environment, taking inspiration from the convept of the environment used in the Basic Task. The agent is now located in a circular environment, whereby the agent is now free to move in any direction, bounded by the linear speed and angular speeds.  If the agent travels a certain distance away from the starting point, the agent will "fall off the map" and the game is terminated. The end point is now a point in the map and if the agent enters within a certain radius r from that point, the agent is considered to have completed the game. The reward matrix remains relatively the same as the Basic Task, where the rewards are 1000 if the agent reaches the endpoint, and 0 otherwise.
 
-\begin{equation}
-    y_{t+1} = y_{s,t} + \text{V} \times \sin(\phi_s + \omega \times a_t)
-\end{equation}
+Furthermore, the agent now has actions "left", "straight" and "right", rather than the conventional 4 directional actions defined before. The state space of the agent is also defined by x, y and phi using the following formula:
 
-\begin{equation}
-    x_{t+1} = x_{s,t} + \text{V} \times \cos(\phi_s + \omega \times a_t), \\
-\end{equation}
-
-\begin{equation}
-    \phi_{t+1} = \phi_{s,t} + \omega \times a_t,
-\end{equation}
+\begin{align}
+    y_{t+1} &= y_{s,t} + \text{V} \times \sin(\phi_s + \omega \times a_t) \label{something} \\
+    x_{t+1} &= x_{s,t} + \text{V} \times \cos(\phi_s + \omega \times a_t), \\
+    \phi_{t+1} &= \phi_{s,t} + \omega \times a_t
+\end{align}
 
 Where V is the linear speed, $\omega$ is the angular speed, a is the action taken by the agent at time t, where 'left' = -1, 'straight' = 0, and 'right' = 1. Through these changes, the complexity of the environment has increased and hence the use of Deep Q Learning is now justified.
+
+\subsection{Improvements}
+For the improvements we have implemented two algorithms, mainly the target network method and the Double-DQN method. Both of the methods vary slightly in the implementation algorithm, but may have impacting results if implemented right. Both of the improvement methods introduce a new variable called the target network, which is initialised as an exact copy of the main network otherwise used in the conventional DQN method. The difference lies in the target network method directly evaluating the action made by the main network, while the DDQN method instead evaluates the next action made by the main network in the DQN method. By doing so, the target network helps to stabilise the convergence of the DQN network, while the DDQN method aims to prevent the DQN network from overestimating the Q-values, which may lead to overfitting when exploiting, where the agent thinks that it is doing the best move based on past results, which may be deterimental in stochastic environments where the same state-action pairs do not necessarily contribute to the same next state spaces.
