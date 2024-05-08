@@ -1,1 +1,17 @@
+\renewcommand{\thesection}{Advanced Task}
 \section{Deep Q Learning}
+The environment used for the Basic Task is too basic to implement Deep Q Learning. Instead, we created a more complicated ice rink environment, taking inspiration from the convept of the environment used in the Basic Task. The agent is now located in a circular environment, whereby the agent is now free to move in any direction, bounded by the linear speed and angular speeds. Furthermore, the agent now has actions "left", "straight" and "right", rather than the conventional 4 directional actions defined before. The state space of the agent is also defined by x, y and phi using the following formula:
+
+\begin{equation}
+    y_{t+1} = y_{s,t} + \text{V} \times \sin(\phi_s + \omega \times a_t)
+\end{equation}
+
+\begin{equation}
+    x_{t+1} = x_{s,t} + \text{V} \times \cos(\phi_s + \omega \times a_t), \\
+\end{equation}
+
+\begin{equation}
+    \phi_{t+1} = \phi_{s,t} + \omega \times a_t,
+\end{equation}
+
+Where V is the linear speed, $\omega$ is the angular speed, a is the action taken by the agent at time t, where 'left' = -1, 'straight' = 0, and 'right' = 1. Through these changes, the complexity of the environment has increased and hence the use of Deep Q Learning is now justified.
