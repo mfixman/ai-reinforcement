@@ -61,7 +61,10 @@ class Trainer:
         self.max_rewards = self.config['max_rewards']
         self.train_episodes = self.config['train_episodes']
         self.tau = self.config['tau']
+        
         self.q_log = []
+
+        self.reward_log = []
 
     def eps_by_episode(self, episode: int) -> float:
         return self.eps_end + (self.eps_start - self.eps_end) * numpy.exp(-1. * episode / self.eps_decay)
@@ -96,8 +99,8 @@ class Trainer:
             total_loss += loss
 
             q_step_log[e] = torch.mean(q_step, dim=0)
-            if total_dones == self.batch_size:
-                break
+            average_q_per_agent = torch.mean(q_step_log, dim=0)
+            
             
             # Update target model every m steps
             if e % self.config['update_freq'] == 0:
@@ -105,8 +108,12 @@ class Trainer:
             
             # Decay Tau
             self.tau *= self.config['tau_decay']
-                
-        return total_loss, total_wins, total_dones, torch.mean(q_step_log, dim=0)
+            
+            if total_dones == self.batch_size:
+                break
+            
+            
+        return total_loss, total_wins, total_dones, average_q_per_agent, 
 
     def commit_gradient(self, states, actions, new_states, rewards, dones):
         # Input variables:
@@ -159,8 +166,9 @@ class Trainer:
         for episode in range(1, episodes + 1):
             eps = self.eps_by_episode(episode)
             loss, wins, dones, q_step_log = self.train_episode(eps, self.config['method'])
-            self.q_log.append(q_step_log.detach().numpy())
+            self.q_log.append(q_step_log.detach().item())
             reward, done = self.env.eval_single(self.model)
+            self.reward_log.append(reward)
             print(f"Episode: {episode:-2d}\t{'Yes!' if done and reward > 0 else 'Nope' if done and reward <= 0 else 'Sad!'}\tEps = {eps:.2f}\tWins: {wins:5g}\tFinish: {dones:5g}\tLoss: {int(loss):-9d}")
             self.plot()
             
