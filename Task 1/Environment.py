@@ -261,7 +261,7 @@ class Environment:
             h = 'd'
             w = 'r'
 
-            cells = [f'(c{self.start[0]}{self.start[1]}{h}{w}.center)']
+            cells = [f'(c-{self.start[0]}-{self.start[1]}{h}{w}.center)']
             for d, (y, x) in path:
                 dirs = {
                     0: ('u', w),
@@ -270,7 +270,7 @@ class Environment:
                     3: (h, 'r'),
                 }
                 h, w = dirs[d]
-                cells.append(f'(c{y}{x}{h}{w}.center)')
+                cells.append(f'(c-{y}-{x}{h}{w}.center)')
 
             print(r'\draw [->, ultra thick]')
             print(' -- '.join(cells) + ';')

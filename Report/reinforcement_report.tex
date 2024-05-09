@@ -3,8 +3,9 @@
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
 \usepackage{textcomp}
+\usepackage{float}
 \usepackage{tikz}
-\usepackage{geometry}
+\usepackage[top=80pt,bottom=120pt,left=75pt,right=75pt]{geometry}
 \usepackage{microtype}
 \usepackage{graphicx}
 \usepackage{subcaption}
@@ -37,8 +38,13 @@
 \usetikzlibrary{fit}
 \usetikzlibrary{plotmarks}
 \usetikzlibrary{positioning}
-% \usetikzlibrary{external}
-% \tikzexternalize[prefix=tikz/]
+\usetikzlibrary{external}
+\tikzexternalize[prefix=tikz/]
+
+\setcounter{topnumber}{10}
+\setcounter{bottomnumber}{10}
+\setcounter{totalnumber}{10}
+% \renewcommand{\floatpagefraction}{1}
 
 \begin{document}
 

@@ -130,21 +130,28 @@ The solution found in \cref{param_sweep} takes on average 139 epochs to converge
 Of those, it takes an average of 31.8 epochs to find a solution, and 97 epochs to find \emph{the best} solution.
 Despite taking significantly longer to converge due to its low learning rate, it always finds a suitable solution.
 
-The final Q-matrix allows us to find the step with the highest expected reward.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=\textwidth]{task1_best_solution_by_epoch.png} \\[1ex]
+	\includegraphics[width=\textwidth]{task1_qmatrix_convergence.png}
+	\caption{Best solution found at each epoch and convergence of the Q-matrix of candidate solution and a few others. We can see that the high Epsilon-decay and low learning rate of our chosen solution make it both \emph{a solution} and \emph{the best solution} faster. Interestingly, while all Q-metrices converge at roughly the same time, the changes in the one with the best solution are more dramatic.}
+\end{figure}
+
+\vspace{-13pt}
 
 \renewcommand{\textuparrow}{\ensuremath{\upa{}}}
 \renewcommand{\textdownarrow}{\ensuremath{\downa{}}}
 \renewcommand{\textleftarrow}{\ensuremath{\lefta{}}}
 \renewcommand{\textrightarrow}{\ensuremath{\righta{}}}
-
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\begin{subfigure}{.48\textwidth}
-		% \resizebox{\textwidth}{!}{\input{bad_task1_map.tikz}}
-		\caption{Example of result after 40 epochs, showing a slightly inefficient path.}
-	\end{subfigure}\hfill{}
-	\begin{subfigure}{.48\textwidth}
-		% \resizebox{\textwidth}{!}{\input{good_task1_map.tikz}}
-		\caption{Example of result after 100 epochs, showing the ideal path.}
+	\begin{subfigure}{.40\textwidth}
+		\resizebox{\textwidth}{!}{\input{bad_task1_map.tikz}}
+		\caption{After 23 epochs, with a path of length 24.}
 	\end{subfigure}
+	\begin{subfigure}{.40\textwidth}
+		\resizebox{\textwidth}{!}{\input{good_task1_map.tikz}}
+		\caption{After 100 epochs, with an ideal path of length 16.}
+	\end{subfigure}
+	\caption{Best action according to each state of the Q-matrix after different amounts of epochs.}
 \end{figure}

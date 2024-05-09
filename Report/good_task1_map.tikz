@@ -21,7 +21,7 @@
  9 & → & → & ↑ & ← & → & → & ↑ & |[fill=Gray]| x & ↑ & ↑ & ← & ↑ & ← \\
 10 & → & → & ↓ & ← & ↓ & |[fill=Gray]| x & → & ← & ← & |[fill=Gray]| x & → & → & ← \\
 11 & ↑ & ← & ← & ← & ← & → & ↑ & ↑ & ↑ & → & ← & ↑ & ← \\
-12 & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & ↑ \\
+12 & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=LimeGreen]|↑ \\
 	};
 
 	\foreach \row in {2,...,14} {

@@ -69,7 +69,6 @@ def main():
 
     combinations = itertools.product(args.policies, args.alphas, args.gammas, args.epsilons, args.decay_rates)
 
-    print(','.join(params + props))
     candidate_env = None
     for policy, alpha, gamma, epsilon, decay_rate in combinations:
         props = {k: [] for k in props}
@@ -105,6 +104,7 @@ def main():
             t = [f for f in v if f is not None]
             avgs[k] = sum(t) / len(t) if t else None
 
+        print(','.join(params + list(props.keys())))
         print(','.join(str(x) for x in [
             policy,
             alpha,
