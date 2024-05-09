@@ -31,7 +31,7 @@ class Trainer:
     train_steps: int
     buf_multiplier: int
 
-    def __init__(self, config : dict[str, Any], env: SkatingRinkEnv, model: nn.Module, model_target: nn.Module, optimizer: optim.Adam, logger : Logger):
+    def __init__(self, config : dict[str, Any], env: SkatingRinkEnv, model: nn.Module, model_target: nn.Module, optimizer: optim.Adam):
         if device == 'cpu':
             print('Warning! Using CPU')
 
@@ -47,7 +47,7 @@ class Trainer:
         self.optimizer = optimizer
         self.loss_fn = nn.MSELoss()
         
-        self.logger = logger
+        # self.logger = logger
 
         self.eps_start = self.config['eps_start']
         self.eps_end = self.config['eps_end']
@@ -173,13 +173,13 @@ class Trainer:
         for episode in range(1, episodes + 1):
             eps = self.eps_by_episode(episode)
             loss, wins, dones, q_step_log = self.train_episode(eps, self.config['method'])
-            # self.q_log.append(q_step_log.detach().item())
+            self.q_log.append(q_step_log.detach().item())
             reward, done = self.env.eval_single(self.model)
-            # self.reward_log.append(reward)
+            self.reward_log.append(reward)
             # ["method", "eps_decay", "tau_decay", "batch_size", "actions_size", "gamma", "update_freq", "lr", "hidden_size", "q_values", "reward"]
-            self.logger.log({"Q": q_step_log.detach().item(),
-                             "Reward": reward})
-            print(f"Episode: {episode:-2d}\t{'Yes!' if done and reward > 0 else 'Nope' if done and reward <= 0 else 'Sad!'}\tEps = {eps:.2f}\tWins: {wins:5g}\tFinish: {dones:5g}\tLoss: {int(loss):-9d}")
+            # self.logger.log({"Q": q_step_log.detach().item(),
+            #                  "Reward": reward})
+            # print(f"Episode: {episode:-2d}\t{'Yes!' if done and reward > 0 else 'Nope' if done and reward <= 0 else 'Sad!'}\tEps = {eps:.2f}\tWins: {wins:5g}\tFinish: {dones:5g}\tLoss: {int(loss):-9d}")
             # self.plot()
             
     def plot(self):

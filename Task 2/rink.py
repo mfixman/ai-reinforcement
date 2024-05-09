@@ -8,13 +8,15 @@ from Trainer import Trainer
 from logger import Logger
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(device)
+import csv
 # filepath = os.path.dirname(os.path.realpath(__file__))
 
 def parse_args():
     parser = argparse.ArgumentParser(description = "Setup command line arguments for the model training configuration.")
 
     parser.add_argument('--hidden_size', type = int, default = 64, help = 'Size of the hidden layer.')
-    parser.add_argument('--win_distance', type = int, default = 1, help = 'Winning distance.')
+    parser.add_argument('--win_distance', type = int, default = 0.5, help = 'Winning distance.')
     parser.add_argument('--lose_distance', type = int, default = 7, help = 'Losing distance.')
     parser.add_argument('--max_eval_steps', type = int, default = 100, help = 'Maximum evaluation steps.')
 
@@ -47,40 +49,47 @@ def main():
     model = DQN(env.state_n, config['hidden_size'], env.actions_n).to(device)
     model_target = DQN(env.state_n, config['hidden_size'], env.actions_n).to(device)
     optimizer = optim.AdamW(model.parameters(), lr = config['lr'])
-    for method_config in [Trainer.DQN, Trainer.TargetNetwork, Trainer.DoubleDQN]:
-        config['method'] = method_config
-        for eps_decay_config in [50,150]:
-            config['eps_decay'] = eps_decay_config  
-            for tau_decay_config in [0.5,1.0]:
-                config['tau_decay'] = tau_decay_config
-                for batch_size_config in [32,64]:
-                    config['batch_size'] = batch_size_config
-                    for action_size_config in [32,64]:
-                        config['actions_size'] = action_size_config
-                        for gamma_config in [0.5,1.0]:
-                            config['gamma'] = gamma_config
-                            for update_freq_config in [10, 50]:
-                                config['update_freq'] = update_freq_config
-                                for lr_config in [0.01, 0.0001]:
-                                    config['lr'] = lr_config
-                                    for hidden_size_config in [32,128,256]:
-                                        wandb_logger = Logger(f'{method_config}_{eps_decay_config}_{tau_decay_config}_{batch_size_config}_{action_size_config}_{gamma_config}_{update_freq_config}_{lr_config}_{hidden_size_config}', project="inm7077 AI")
-                                        logger = wandb_logger.get_logger()
-                                        config['hidden_size'] = hidden_size_config
-                                        
-                                        #Training Step
-                                        myTrainer = Trainer(config, env, model, model_target, optimizer, logger)
-                                        myTrainer.train()
-                                        
-                                        #Evaluation Step
-                                        reward, done = env.eval_single(model)
-                                        if done and reward > 0:
-                                            print('Finished and won :-)')
-                                            torch.save({'weights': model.state_dict(), 'config': config}, 'ice_skater.pth')
-                                        elif done and reward < 0:
-                                            print('Finished and lost :-(((')
-                                        else:
-                                            print('Not finished :-(')
+    with open('paramsearch.csv','w', newline='') as file:
+        writer = csv.writer(file, delimiter=',')
+        writer.writerow(['Method', 'Eps Decay', 'Tau Decay', 'Batch Size', 'Action Size', 'Gamma', 'Update Freq', 'LR', 'Hidden Size', 'Q/Episode', 'Reward/Episode'])
+        file.flush()
+        for method_config in [Trainer.DQN, Trainer.TargetNetwork, Trainer.DoubleDQN]:
+            config['method'] = method_config
+            for eps_decay_config in [50,150]:
+                config['eps_decay'] = eps_decay_config  
+                for tau_decay_config in [0.5,1.0]:
+                    config['tau_decay'] = tau_decay_config
+                    for batch_size_config in [1,32,64]:
+                        config['batch_size'] = batch_size_config
+                        for action_size_config in [32,64]:
+                            config['actions_size'] = action_size_config
+                            for gamma_config in [0.5,1.0]:
+                                for update_freq_config in [10, 50]:
+                                    config['update_freq'] = update_freq_config
+                                    for lr_config in [0.01, 0.0001]:
+                                        config['lr'] = lr_config
+                                        for hidden_size_config in [32,128,256]:
+                                            config['hidden_size'] = hidden_size_config
+                                            # print(f'{method_config}_{eps_decay_config}_{tau_decay_config}_{batch_size_config}_{action_size_config}_{gamma_config}_{update_freq_config}_{lr_config}_{hidden_size_config}')
+                                            # wandb_logger = Logger(group_name=f'{method_config}_{eps_decay_config}_{tau_decay_config}_{batch_size_config}_{action_size_config}_{gamma_config}_{update_freq_config}_{lr_config}_{hidden_size_config}', experiment_name='T2', project="inm7077 AI")
+                                            # logger = wandb_logger.get_logger()
+                                            
+                                            
+                                            #Training Step
+                                            myTrainer = Trainer(config, env, model, model_target, optimizer)
+                                            myTrainer.train()
+                                            
+                                            #Evaluation Step
+                                            reward, done = env.eval_single(model)
+                                            writer.writerow([method_config, eps_decay_config, tau_decay_config, batch_size_config, action_size_config, gamma_config, update_freq_config, lr_config, hidden_size_config, myTrainer.q_log, myTrainer.reward_log])
+                                            file.flush()
+                                            # if done and reward > 0:
+                                            #     print('Finished and won :-)')
+                                            #     torch.save({'weights': model.state_dict(), 'config': config}, 'ice_skater.pth')
+                                            # elif done and reward < 0:
+                                            #     print('Finished and lost :-(((')
+                                            # else:
+                                            #     print('Not finished :-(')
                                             
                                             
                                     
