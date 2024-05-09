@@ -164,10 +164,11 @@ class Environment:
         diffs_per_epoch = []
         while not finished():
             old_Q = self.Q.copy()
-            steps = self.run()
+            self.run()
 
             diff = numpy.mean(dropNaN(numpy.abs(old_Q - self.Q)))
 
+            steps = self.steps()
             steps_per_epoch.append(steps)
             diffs_per_epoch.append(diff)
 
@@ -177,15 +178,16 @@ class Environment:
 
         return epoch, steps_per_epoch, diffs_per_epoch
 
-    def reachesEnd(self) -> bool:
+    def steps(self) -> None | int:
         dirs = numpy.argmax(numpy.nan_to_num(self.Q, nan = float('-inf')), axis = 2)
 
         visited = numpy.zeros((self.N, self.M, self.D), dtype = bool)
         y, x = self.start
+        steps = 0
         while (y, x) != self.end:
             d = dirs[y, x]
             if visited[y, x, d]:
-                return False
+                return None
 
             while self.canStep(y, x):
                 visited[y, x, d] = True
@@ -194,8 +196,9 @@ class Environment:
 
             y -= self.dirs[d][0]
             x -= self.dirs[d][1]
+            steps += 1
 
-        return True
+        return steps
 
     def getBestMap(self):
         dirs = numpy.argmax(numpy.nan_to_num(self.Q, nan = float('-inf')), axis = 2)

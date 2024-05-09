@@ -1,13 +1,10 @@
 import argparse
 import itertools
-import matplotlib
 import os
-import seaborn
 import numpy
 
 from collections import defaultdict
 
-from matplotlib import pyplot
 from Environment import Environment
 
 def parse_args():
@@ -19,13 +16,16 @@ def parse_args():
     parser.add_argument('--decay-rates', '--decay-rate', default = [.99], nargs = '+', type = float, help = 'Decay rate')
     parser.add_argument('--policies', '--policy', type = str, default = [Environment.epsgreedy], nargs = '+', choices = [Environment.epsgreedy, Environment.bellman])
 
-    parser.add_argument('--max-epochs', default = 5000, type = int, help = 'Maximum amount of epochs used to learn')
+    parser.add_argument('--max-epochs', type = int, help = 'Maximum amount of epochs used to learn')
     parser.add_argument('--max-steps', default = 100, type = int, help = 'Max amount of steps to reach solution')
 
     parser.add_argument('--repeats', type = int, default = 1, help = 'How many times each experiment is repeated')
     parser.add_argument('--print-solution', action = 'store_true', help = 'Print final solution')
     parser.add_argument('--print-Q', action = 'store_true', help = 'Print final Q matrix')
     parser.add_argument('--latex', action = 'store_true', help = 'Whether to print in LaTeX format')
+    parser.add_argument('--print-datas', action = 'store_true', help = 'Print datas')
+
+    parser.add_argument('--seed', default = 0, type = int, help = 'Random seed')
 
     parser.add_argument('--use-best-params', action = 'store_true', help = 'Use best params, as found in parameter sweep')
 
@@ -61,8 +61,7 @@ def parseMap(map_file):
 def main():
     args = parse_args()
     map = parseMap(args.map_file)
-    seaborn.set()
-
+    numpy.random.seed(args.seed)
 
     best_solution = 16
     params = ['policy', 'alpha', 'gamma', 'epsilon', 'dec_rate']
@@ -96,6 +95,11 @@ def main():
             if steps_per_epoch[-1] is not None:
                 candidate_env = env
 
+            if args.print_datas:
+                print('epoch,steps,diffs')
+                for e in range(1, epochs):
+                    print(f'{e},{steps_per_epoch[e - 1]},{diffs_per_epoch[e - 1]}')
+
         avgs = dict()
         for k, v in props.items():
             t = [f for f in v if f is not None]
@@ -109,7 +113,7 @@ def main():
             decay_rate,
             ] + list(avgs.values())
         ))
-    
+
     if candidate_env is not None:
         if args.print_Q:
             candidate_env.printQMatrix(args.latex)
