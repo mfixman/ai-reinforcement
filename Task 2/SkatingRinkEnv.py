@@ -91,7 +91,7 @@ class SkatingRinkEnv:
 
     @torch.no_grad()
     def eval(self, model : nn.Module, states : tensor) -> ReplayBuffer:
-        ret = ReplayBuffer()
+        ret = ReplayBuffer(100000)
         for e in range(1, 1 + self.max_eval_steps):
             q_values = model(states)
             actions = q_values.max(dim = 1)[1]

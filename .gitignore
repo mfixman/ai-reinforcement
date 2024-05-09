@@ -313,3 +313,5 @@ __pycache__/
 /Individual Task/
 
 Report/tex/*
+Task 2/wandb/
+Task2/__pycache__/

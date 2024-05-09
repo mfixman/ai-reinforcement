@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name 707                   # Job name
-#SBATCH --partition=prigpu                        # Select the correct partition.
+#SBATCH --partition=preemptgpu                        # Select the correct partition.
 #SBATCH --nodes=1                                # Run on 1 nodes (each node has 48 cores)
 #SBATCH --ntasks-per-node=1                        # Run one task
 #SBATCH --cpus-per-task=4                          # Use 4 cores, most of the procesing happens on the GPU
@@ -23,9 +23,9 @@ export WANDB_API_KEY=e205877d44ce7551989287af4f43729092dd648c
 
 echo $WANDB_API_KEY
 
-cd ai-reinforcement/Task\ 2
+cd ai-reinforcement/Task\ 2/
 python --version
-#module load libs/nvidia-cuda/11.2.0/bin
+module load libs/nvidia-cuda/11.2.0/bin
 
 wandb login $WANDB_API_KEY --relogin
 #pip freeze

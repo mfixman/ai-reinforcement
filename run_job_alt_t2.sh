@@ -9,8 +9,8 @@
 #SBATCH --gres=gpu:1                               # Use one gpu.
 #SBATCH -e results/%x_%j.e                         # Standard output and error log [%j is replaced with the jobid]
 #SBATCH -o results/%x_%j.o                         # [%x with the job name], make sure 'results' folder exists.
-#SBATCH --error cont1.err
-#SBATCH --output cont1.output
+#SBATCH --error 707.err
+#SBATCH --output 707.output
 
 #Enable modules command
 

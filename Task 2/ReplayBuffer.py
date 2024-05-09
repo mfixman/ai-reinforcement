@@ -14,9 +14,9 @@ class ReplayBuffer:
     rewards: list[LongTensor]
     dones: list[BoolTensor]
 
-    max_size: None | int
+    max_size: int
 
-    def __init__(self, max_size = None):
+    def __init__(self, max_size=None):
         self.states = []
         self.actions = []
         self.new_states = []

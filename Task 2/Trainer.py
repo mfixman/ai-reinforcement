@@ -1,12 +1,12 @@
 import numpy
 import torch
-import matplotlib.pyplot as plt
 
 from SkatingRinkEnv import SkatingRinkEnv
 from ReplayBuffer import ReplayBuffer
 
 from torch import nn, optim, tensor, LongTensor, FloatTensor, BoolTensor
 from typing import Any
+from logger import Logger
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -31,7 +31,7 @@ class Trainer:
     train_steps: int
     buf_multiplier: int
 
-    def __init__(self, config : dict[str, Any], env: SkatingRinkEnv, model: nn.Module, model_target: nn.Module, optimizer: optim.Adam):
+    def __init__(self, config : dict[str, Any], env: SkatingRinkEnv, model: nn.Module, model_target: nn.Module, optimizer: optim.Adam, logger : Logger):
         if device == 'cpu':
             print('Warning! Using CPU')
 
@@ -46,6 +46,8 @@ class Trainer:
 
         self.optimizer = optimizer
         self.loss_fn = nn.MSELoss()
+        
+        self.logger = logger
 
         self.eps_start = self.config['eps_start']
         self.eps_end = self.config['eps_end']
@@ -61,6 +63,12 @@ class Trainer:
         self.max_rewards = self.config['max_rewards']
         self.train_episodes = self.config['train_episodes']
         self.tau = self.config['tau']
+        self.tau_decay = self.config['tau_decay']
+        
+        self.gamma = self.config['gamma']
+        self.update_freq = self.config['update_freq']
+        self.lr = self.config['lr']
+        self.hidden_size = self.config['hidden_size']
         
         self.q_log = []
 
@@ -129,21 +137,20 @@ class Trainer:
         # with torch.no_grad(): # needs grad to back propagate
         # Get q values of the target model if Target Network/DDQN is selected, else get q values of original model
 
-        match self.method:
-            case Trainer.DQN:
-                next_q = self.model(new_states).max(axis = 1)[0]
-                expected_q = rewards + gamma * next_q * ~dones
-            case Trainer.TargetNetwork:
-                # Simply evaluate the action of the MAIN network using the TARGET network
-                next_q = self.model_target(new_states).max(axis = 1)[0]
-                expected_q = rewards + gamma * next_q * ~dones
-            case Trainer.DoubleDQN:
-                # For DDQN, MAIN network is used to select action
-                next_model_action = self.model(new_states).max(axis = 1)[1]
+        if(self.method == Trainer.DQN):
+            next_q = self.model(new_states).max(axis = 1)[0]
+            expected_q = rewards + gamma * next_q * ~dones
+        elif(self.method == Trainer.TargetNetwork):
+            # Simply evaluate the action of the MAIN network using the TARGET network
+            next_q = self.model_target(new_states).max(axis = 1)[0]
+            expected_q = rewards + gamma * next_q * ~dones
+        elif(self.method == Trainer.DoubleDQN):
+            # For DDQN, MAIN network is used to select action
+            next_model_action = self.model(new_states).max(axis = 1)[1]
 
-                # TARGET network is used to evaluate the action of the MAIN network
-                next_q =torch.gather(self.model_target(new_states), 1, next_model_action.unsqueeze(1))[~dones]
-                expected_q = rewards + gamma
+            # TARGET network is used to evaluate the action of the MAIN network
+            next_q =torch.gather(self.model_target(new_states), 1, next_model_action.unsqueeze(1))[~dones]
+            expected_q = rewards + gamma
 
         current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
         loss = self.loss_fn(current_q, expected_q)
@@ -166,11 +173,14 @@ class Trainer:
         for episode in range(1, episodes + 1):
             eps = self.eps_by_episode(episode)
             loss, wins, dones, q_step_log = self.train_episode(eps, self.config['method'])
-            self.q_log.append(q_step_log.detach().item())
+            # self.q_log.append(q_step_log.detach().item())
             reward, done = self.env.eval_single(self.model)
-            self.reward_log.append(reward)
+            # self.reward_log.append(reward)
+            # ["method", "eps_decay", "tau_decay", "batch_size", "actions_size", "gamma", "update_freq", "lr", "hidden_size", "q_values", "reward"]
+            self.logger.log({"Q": q_step_log.detach().item(),
+                             "Reward": reward})
             print(f"Episode: {episode:-2d}\t{'Yes!' if done and reward > 0 else 'Nope' if done and reward <= 0 else 'Sad!'}\tEps = {eps:.2f}\tWins: {wins:5g}\tFinish: {dones:5g}\tLoss: {int(loss):-9d}")
-            self.plot()
+            # self.plot()
             
     def plot(self):
         return
