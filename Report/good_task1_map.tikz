@@ -8,20 +8,20 @@
 		column 1/.style={nodes={fill=gray!30, execute at begin node=$, execute at end node=$}},
 		row 1/.style={nodes={fill=gray!30, execute at begin node=$, execute at end node=$}}
 	]{
-		& 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 \\
-		0 & → & ↓ & ↓ & → & ↓ & ↓ & ↓ & ↓ & |[fill=Gray]| x & → & → & → & ↓ \\
-		1 & → & ↓ & ↑ & |[fill=Gray]| x & → & → & ↓ & ↑ & ↓ & → & ← & ↓ & ↓ \\
-		2 & ↓ & ← & ↑ & ← & → & ↓ & ← & → & ↑ & |[fill=Gray]| x & → & → & ↓ \\
-		3 & ↑ & |[fill=Gray]| x & ↓ & → & → & ↓ & ← & ← & → & ← & ← & ↑ & ← \\
-		4 & |[fill=Gray]| x & ↓ & ↓ & ↓ & → & ← & ← & ← & |[fill=Gray]| x & ↑ & ↓ & ↓ & ← \\
-		5 & → & ↓ & ← & ↓ & → & → & → & ← & → & ↓ & ↓ & ↑ & |[fill=Gray]| x \\
-		6 & → & ← & → & → & ← & ↓ & |[fill=Gray]| x & → & → & → & ↑ & ↑ & ↓ \\
-		7 & ↓ & ← & |[fill=Gray]| x & → & ← & → & → & → & ↑ & ↑ & → & → & |[fill=Yellow]|\checkmark{} \\
-		8 & → & ← & ↓ & ↓ & ← & ↑ & → & → & ↓ & ↓ & ↑ & ↓ & |[fill=Gray]| x \\
-		9 & → & ↓ & ↓ & → & ↑ & → & ↑ & |[fill=Gray]| x & ↑ & ↑ & ← & ↑ & ← \\
-		10 & ↓ & → & ↓ & ↑ & ↓ & |[fill=Gray]| x & ↓ & ↓ & ↑ & |[fill=Gray]| x & ↓ & ← & ↓ \\
-		11 & ↑ & → & → & ← & ↑ & ← & ↑ & ← & ↑ & ← & ↑ & ↑ & ↑ \\
-		12 & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Green]|↑ \\
+   & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 \\
+ 0 & → & ↓ & ↓ & → & ↓ & ↓ & ← & ↓ & |[fill=Gray]| x & → & ← & → & ↓ \\
+ 1 & ↑ & ↑ & ↑ & |[fill=Gray]| x & → & ↓ & ← & → & → & ↑ & ↓ & ↓ & ↓ \\
+ 2 & ↓ & ↑ & ↓ & ← & → & ↓ & → & ↑ & ↑ & |[fill=Gray]| x & ↑ & ↓ & ↑ \\
+ 3 & ↑ & |[fill=Gray]| x & ↓ & ↑ & ← & → & ↑ & ← & ← & ← & ↓ & ↓ & ← \\
+ 4 & |[fill=Gray]| x & ↓ & ↓ & ↓ & ↓ & → & ↓ & ↑ & |[fill=Gray]| x & ↑ & ↑ & ← & ← \\
+ 5 & → & ↑ & → & ↑ & ↓ & ↑ & ↑ & → & → & ← & ↑ & ↑ & |[fill=Gray]| x \\
+ 6 & → & → & → & ← & → & ↓ & |[fill=Gray]| x & ↑ & → & ↓ & ↑ & ↑ & ↓ \\
+ 7 & ↑ & ↓ & |[fill=Gray]| x & → & → & ← & → & → & → & ↑ & ↓ & ← & |[fill=Yellow]| \checkmark{} \\
+ 8 & ↓ & ↑ & ↓ & ↓ & ↓ & ↑ & ↑ & → & ← & ↓ & ↓ & ↑ & |[fill=Gray]| x \\
+ 9 & → & → & ↑ & ← & → & → & ↑ & |[fill=Gray]| x & ↑ & ↑ & ← & ↑ & ← \\
+10 & → & → & ↓ & ← & ↓ & |[fill=Gray]| x & → & ← & ← & |[fill=Gray]| x & → & → & ← \\
+11 & ↑ & ← & ← & ← & ← & → & ↑ & ↑ & ↑ & → & ← & ↑ & ← \\
+12 & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & |[fill=Gray]| x & ↑ \\
 	};
 
 	\foreach \row in {2,...,14} {
@@ -39,13 +39,8 @@
 		}
 	}
 	\node[fit=(table-1-1)(table-14-14), draw, very thick, inner sep=0pt] {};
-
-	\draw [->, ultra thick]
-		(c1212r.center) -- (c912ur.center) -- (c98ul.center) -- (c58ul.center) --
-		(c511ur.center) -- (c011ur.center) -- (c012ur.center) -- (c412dr.center) --
-		(c49dl.center) -- (c39ul.center) -- (c32ul.center) -- (c62dl.center) --
-		(c65dr.center) -- (c95dr.center) -- (c96dr.center) --
-		(c76ur.center) -- (c712u.center);
+\draw [->, ultra thick]
+(c1212dr.center) -- (c912ur.center) -- (c98ul.center) -- (c58ul.center) -- (c511ur.center) -- (c011ur.center) -- (c012ur.center) -- (c412dr.center) -- (c49dl.center) -- (c39ul.center) -- (c32ul.center) -- (c62dl.center) -- (c65dr.center) -- (c95dr.center) -- (c96dr.center) -- (c76ur.center) -- (c712ur.center);
 
 \end{tikzpicture}
 

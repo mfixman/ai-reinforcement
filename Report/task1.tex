@@ -139,6 +139,12 @@ The final Q-matrix allows us to find the step with the highest expected reward.
 
 \begin{figure}[h]
 	\centering
-	\resizebox{.48\textwidth}{!}{\input{good_task1_map.tikz}}
-	\caption{Example of result after 100 epochs.}
+	\begin{subfigure}{.48\textwidth}
+		\resizebox{\textwidth}{!}{\input{bad_task1_map.tikz}}
+		\caption{Example of result after 40 epochs, showing a slightly inefficient path.}
+	\end{subfigure}\hfill{}
+	\begin{subfigure}{.48\textwidth}
+		\resizebox{\textwidth}{!}{\input{good_task1_map.tikz}}
+		\caption{Example of result after 100 epochs, showing the ideal path.}
+	\end{subfigure}
 \end{figure}
