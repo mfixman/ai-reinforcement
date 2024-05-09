@@ -134,7 +134,7 @@ Despite taking significantly longer to converge due to its low learning rate, it
 	\centering
 	\includegraphics[width=\textwidth]{task1_best_solution_by_epoch.png} \\[1ex]
 	\includegraphics[width=\textwidth]{task1_qmatrix_convergence.png}
-	\caption{Best solution found at each epoch and convergence of the Q-matrix of candidate solution and a few others. We can see that the high Epsilon-decay and low learning rate of our chosen solution make it both \emph{a solution} and \emph{the best solution} faster. Interestingly, while all Q-metrices converge at roughly the same time, the changes in the one with the best solution are more dramatic.}
+	\caption{Best solution found at each epoch and convergence of the Q-matrix of candidate solution and a few others. We can see that the high Epsilon-decay and low learning rate of our chosen solution make it both \emph{a solution} and \emph{the best solution} faster. Additionally, the best solution converges to a much larger mean Q value.}
 \end{figure}
 
 \vspace{-13pt}
@@ -145,11 +145,11 @@ Despite taking significantly longer to converge due to its low learning rate, it
 \renewcommand{\textrightarrow}{\ensuremath{\righta{}}}
 \begin{figure}[H]
 	\centering
-	\begin{subfigure}{.40\textwidth}
+	\begin{subfigure}{.42\textwidth}
 		\resizebox{\textwidth}{!}{\input{bad_task1_map.tikz}}
 		\caption{After 23 epochs, with a path of length 24.}
 	\end{subfigure}
-	\begin{subfigure}{.40\textwidth}
+	\begin{subfigure}{.42\textwidth}
 		\resizebox{\textwidth}{!}{\input{good_task1_map.tikz}}
 		\caption{After 100 epochs, with an ideal path of length 16.}
 	\end{subfigure}

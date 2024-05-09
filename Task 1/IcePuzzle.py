@@ -74,7 +74,7 @@ def main():
         props = {k: [] for k in props}
         for r in range(args.repeats):
             env = Environment(map, policy = policy, alpha = alpha, gamma = gamma, epsilon = epsilon, decay_rate = decay_rate, max_steps = args.max_steps)
-            epochs, steps_per_epoch, diffs_per_epoch = env.learn(Q_eps = 1e-12, max_epochs = args.max_epochs)
+            epochs, steps_per_epoch, diffs_per_epoch, Qmean_per_epoch = env.learn(Q_eps = 1e-12, max_epochs = args.max_epochs)
 
             try:
                 best = min([x for x in steps_per_epoch if x is not None])
@@ -97,7 +97,7 @@ def main():
             if args.print_datas:
                 print('epoch,steps,diffs')
                 for e in range(1, epochs):
-                    print(f'{e},{steps_per_epoch[e - 1]},{diffs_per_epoch[e - 1]}')
+                    print(f'{e},{steps_per_epoch[e - 1]},{diffs_per_epoch[e - 1]},{Qmean_per_epoch[e - 1]}')
 
         avgs = dict()
         for k, v in props.items():

@@ -162,6 +162,7 @@ class Environment:
 
         steps_per_epoch = []
         diffs_per_epoch = []
+        Qmean_per_epoch = []
         while not finished():
             old_Q = self.Q.copy()
             self.run()
@@ -171,12 +172,13 @@ class Environment:
             steps = self.steps()
             steps_per_epoch.append(steps)
             diffs_per_epoch.append(diff)
+            Qmean_per_epoch.append(numpy.nanmean(self.Q))
 
             # Add decay after every epoch
             self.epsilon *= self.decay_rate
             epoch += 1
 
-        return epoch, steps_per_epoch, diffs_per_epoch
+        return epoch, steps_per_epoch, diffs_per_epoch, Qmean_per_epoch
 
     def steps(self) -> None | int:
         dirs = numpy.argmax(numpy.nan_to_num(self.Q, nan = float('-inf')), axis = 2)
