@@ -203,6 +203,7 @@ class Environment:
         bestMap = numpy.where(self.obstacles, 'x', ' ')
         bestMap[self.end] = '✗'
 
+        path = []
         maps = []
 
         y, x = self.start
@@ -216,9 +217,10 @@ class Environment:
             y -= self.dirs[d][0]
             x -= self.dirs[d][1]
             bestMap[y, x] = '●'
+            path.append((d, (y, x)))
             maps.append(bestMap.copy())
 
-        return maps
+        return path, maps
 
     def printBestMap(self):
         maps = self.getBestMap()
@@ -227,9 +229,47 @@ class Environment:
             print()
 
         return len(maps)
-    
-    def printQMatrix(self):
+
+    def printQMatrix(self, latex = False):
         Q_map = numpy.nan_to_num(self.Q, nan = -1).argmax(axis = 2)
         generator = numpy.vectorize(lambda x: self.names.get(x, ' '))
-        for y, row in enumerate(Q_map):
-            print(''.join(self.names[c] if self.canStep(y, x) else 'x' for x, c in enumerate(row)))
+
+        if not latex:
+            for y, row in enumerate(Q_map):
+                print(''.join(self.names[c] if self.canStep(y, x) else 'x' for x, c in enumerate(row)))
+        else:
+            print('  ' + ''.join(f' & {x}' for x in range(len(Q_map[0]))) + r' \\')
+            for y, row in enumerate(Q_map):
+                chars = []
+                for x, c in enumerate(row):
+                    w = ' & '
+                    if (y, x) == self.end:
+                        w += r'|[fill=Yellow]| \checkmark{}'
+                    elif not self.canStep(y, x):
+                        w += '|[fill=Gray]| x'
+                    else:
+                        w += self.names[c]
+
+                    chars.append(w)
+
+                print(f'{y:-2d}' + ''.join(chars) + r' \\')
+
+            path, _ = self.getBestMap()
+            h = 'd'
+            w = 'r'
+
+            cells = [f'(c{self.start[0]}{self.start[1]}{h}{w}.center)']
+            for d, (y, x) in path:
+                dirs = {
+                    0: ('u', w),
+                    1: ('d', w),
+                    2: (h, 'l'),
+                    3: (h, 'r'),
+                }
+                h, w = dirs[d]
+                cells.append(f'(c{y}{x}{h}{w}.center)')
+
+            print(r'\draw [->, ultra thick]')
+            print(' -- '.join(cells) + ';')
+
+        print()

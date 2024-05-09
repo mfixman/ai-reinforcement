@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument('--repeats', type = int, default = 1, help = 'How many times each experiment is repeated')
     parser.add_argument('--print-solution', action = 'store_true', help = 'Print final solution')
     parser.add_argument('--print-Q', action = 'store_true', help = 'Print final Q matrix')
+    parser.add_argument('--latex', action = 'store_true', help = 'Whether to print in LaTeX format')
 
     parser.add_argument('--use-best-params', action = 'store_true', help = 'Use best params, as found in parameter sweep')
 
@@ -111,9 +112,9 @@ def main():
     
     if candidate_env is not None:
         if args.print_Q:
-            candidate_env.printQMatrix()
+            candidate_env.printQMatrix(args.latex)
         if args.print_solution:
-            steps = candidate_env.printBestMap()
+            steps = candidate_env.printBestMap(args.latex)
             print(f'¡¡¡¡¡Got there in {steps} steps!!!!!')
 
 if __name__ == '__main__':
