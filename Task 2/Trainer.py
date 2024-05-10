@@ -77,8 +77,8 @@ class Trainer:
     def train_episode(self, episode: int, epsilon: float, method: int) -> tuple[float, int, int]:
         # states = self.env.dropin(self.batch_size, self.env.lose_distance_at(self.train_episodes - episode))
         states = self.env.dropin(self.batch_size)
-        q_step_log = torch.zeros(size=(self.train_steps,1))
-        total_loss = tensor(.0)
+        q_step_log_sum = tensor(0.).to(device)
+        total_loss = tensor(0.).to(device)
         replays = ReplayBuffer(self.actions_size * self.buf_multiplier)
 
         total_wins = 0
@@ -96,7 +96,8 @@ class Trainer:
             loss, q_step = self.commit_gradient(*replays.sample(self.actions_size))
             total_loss += loss
 
-            q_step_log[e] = torch.mean(q_step, dim=0)
+            q_step_log_sum += torch.mean(q_step, dim = 0)
+
             if total_dones == self.batch_size:
                 break
             
@@ -107,7 +108,7 @@ class Trainer:
             # Decay Tau
             self.tau *= self.config['tau_decay']
                 
-        return total_loss, total_wins, total_dones, torch.mean(q_step_log, dim=0)
+        return total_loss, total_wins, total_dones, q_step_log_sum / self.train_steps
 
     def commit_gradient(self, states, actions, new_states, rewards, dones):
         # Input variables:
@@ -136,8 +137,10 @@ class Trainer:
                 next_model_action = self.model(new_states).max(axis = 1)[1]
 
                 # TARGET network is used to evaluate the action of the MAIN network
-                next_q =torch.gather(self.model_target(new_states), 1, next_model_action.unsqueeze(1))[~dones]
-                expected_q = rewards + gamma * next_q
+                next_q = torch.gather(self.model_target(new_states), 1, next_model_action.unsqueeze(1)).squeeze(1)
+                expected_q = rewards + gamma * next_q * ~dones
+            case _:
+                raise ValueError('Something else')
 
         current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
         loss = self.loss_fn(current_q, expected_q)
@@ -174,19 +177,19 @@ class Trainer:
             loss, wins, dones, q_step_log = self.train_episode(episode, eps, self.config)
             reward, done = self.env.eval_single(self.model)
 
-            eval_rewards, eval_dones = self.env.eval_many(self.model, 100)
-            if episode > 25 and eval_dones >= 10 and eval_dones >= best_dones:
+            eval_rewards, eval_dones = self.env.eval_many(self.model, 1000)
+            if episode > 25 and eval_dones >= 10 and eval_dones > best_dones:
                 best_dones = eval_dones
                 best_episode = episode
                 best_loss = loss
-                best_q_step_log = q_step_log.detach().item()
+                best_q_step_log = q_step_log
 
-            if episode - last_print_episode >= 25:
+            if all_debug and episode - last_print_episode >= 25:
                 last_print_episode = episode
                 self.save_model(f'dims/data{episode}.pth', episode)
                 print('Best model saved!')
 
-            if all_debug or episode % 100 == 0 or episode == episodes:
+            if all_debug or episode % 25 == 0 or episode == episodes:
                 print(f"Episode: {episode:-2d}\tEps = {eps:.2f}\tWins: {wins:5g}\tFinish: {dones:5g}\tLoss: {int(loss):-9d}\tVD: {eval_dones}")
 
         return best_episode, best_dones, best_loss, best_q_step_log

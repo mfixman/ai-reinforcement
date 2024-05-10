@@ -11,7 +11,7 @@ from Trainer import Trainer
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def parse_args():
-    parser = argparse.ArgumentParser(description = "Setup command line arguments for the model training configuration.")
+    parser = argparse.ArgumentParser(description = "Skating rink")
 
     parser.add_argument('--hidden_size', type = int, default = 64, help = 'Size of the hidden layer.')
     parser.add_argument('--win_distance', type = float, default = 1, help = 'Winning distance.')
