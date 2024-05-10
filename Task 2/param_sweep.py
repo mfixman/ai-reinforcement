@@ -28,7 +28,7 @@ def parse_args():
 
     parser.add_argument('--max_eval_steps', type = int, default = 250, help = 'Maximum evaluation steps.')
 
-    parser.add_argument('--eps_end', type = float, default = 0.1, help = 'Final value of epsilon.')
+    parser.add_argument('--eps_end', type = float, default = 0, help = 'Final value of epsilon.')
     parser.add_argument('--eps_decay', type = int, default = 500, help = 'Decay rate of epsilon.')
 
     parser.add_argument('--batch_size', type = int, default = 5000, help = 'Batch size for training.')
