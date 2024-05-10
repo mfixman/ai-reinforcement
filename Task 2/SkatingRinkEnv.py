@@ -10,8 +10,8 @@ from ReplayBuffer import ReplayBuffer
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class SkatingRinkEnv:
-    speed = .25
-    ang_speed = 1/10 * (2 * numpy.pi)
+    speed = .1
+    ang_speed = 1/20 * (2 * numpy.pi)
 
     actions_n = 3
     actions = {
@@ -46,7 +46,7 @@ class SkatingRinkEnv:
 
     @staticmethod
     def clip_angle(phis):
-        return phis + (phis.abs() > numpy.pi) * phis.sign() * -numpy.pi
+        return phis.remainder(tensor(2 * torch.pi))
 
     def rewards_dones(self, states : tensor) -> tuple[tensor, tensor]:
         distances = states[:, 0:2].square().sum(axis = 1).sqrt()
@@ -97,6 +97,9 @@ class SkatingRinkEnv:
             actions = q_values.max(dim = 1)[1]
 
             new_states, rewards, dones = self.steps(states, actions)
+            if e == self.max_eval_steps:
+                rewards = torch.where(~dones, -10000, rewards)
+
             ret.add_single(states, actions, new_states, rewards, dones)
 
             states = new_states
@@ -116,9 +119,9 @@ class SkatingRinkEnv:
         max_dist = self.lose_distance / 2
 
         p = torch.rand(batch_size) * (max_dist - min_dist) + min_dist
-        alpha = torch.rand(batch_size) * (2 * numpy.pi) - numpy.pi
+        alpha = torch.rand(batch_size) * (2 * numpy.pi)
 
         ys = p * torch.sin(alpha)
         xs = p * torch.cos(alpha)
-        phis = torch.rand(batch_size) * (2 * numpy.pi) - numpy.pi
+        phis = torch.rand(batch_size) * (2 * numpy.pi)
         return torch.stack([ys, xs, phis]).T.to(device)
