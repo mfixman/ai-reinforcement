@@ -9,6 +9,7 @@ from SkatingRinkEnv import SkatingRinkEnv
 from Trainer import Trainer
 
 from itertools import product
+import sys
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -42,12 +43,18 @@ def parse_args():
     parser.add_argument('--tau_decay', type = float, default = 1.0, help = 'Decay rate of tau.')
     parser.add_argument('--update_freq', type = int, default = 50, help = 'Update frequency for target network.')
 
+    parser.add_argument('--output_file', help = 'Output file')
+
     return vars(parser.parse_args())
 
 def main():
     config = parse_args()
 
-    print(f'method,hidden_size,lr,gamma,win_rate,avg_reward,loss,q_step')
+    out = sys.stdout
+    if config['output_file'] is not None:
+        out = open(config['output_file'], 'w')
+
+    print(f'method,hidden_size,lr,gamma,win_rate,avg_reward,loss,q_step', file = out)
 
     combinations = product(config['methods'], config['hidden_sizes'], config['lrs'], config['gammas'])
     for method, hidden_size, lr, gamma in combinations:
@@ -73,7 +80,7 @@ def main():
         win_rate = dones.sum() / dones.shape[0]
         avg_reward = rewards.sum() / rewards.shape[0]
         
-        print(f'{method},{hidden_size},{lr},{gamma},{win_rate},{avg_reward},{loss},{q_step}')
+        print(f'{method},{hidden_size},{lr},{gamma},{win_rate},{avg_reward},{loss},{q_step}', file = out)
 
 if __name__ == '__main__':
     main()
