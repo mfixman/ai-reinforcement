@@ -14,9 +14,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description = "Setup command line arguments for the model training configuration.")
 
     parser.add_argument('--hidden_size', type = int, default = 64, help = 'Size of the hidden layer.')
-    parser.add_argument('--win_distance', type = float, default = 1., help = 'Winning distance.')
-    parser.add_argument('--lose_distance', type = float, default = 7., help = 'Losing distance.')
-    parser.add_argument('--max_eval_steps', type = int, default = 100, help = 'Maximum evaluation steps.')
+    parser.add_argument('--win_distance', type = float, default = 1, help = 'Winning distance.')
+    parser.add_argument('--lose_distance', type = float, default = 10., help = 'Losing distance.')
+    parser.add_argument('--max_eval_steps', type = int, default = 250, help = 'Maximum evaluation steps.')
 
     parser.add_argument('--eps_start', type = float, default = 1.0, help = 'Starting value of epsilon.')
     parser.add_argument('--eps_end', type = float, default = 0.001, help = 'Final value of epsilon.')
@@ -25,10 +25,9 @@ def parse_args():
     parser.add_argument('--batch_size', type = int, default = 5000, help = 'Batch size for training.')
     parser.add_argument('--actions_size', type = int, default = 1000, help = 'Number of actions.')
     parser.add_argument('--buf_multiplier', type = int, default = 100, help = 'Buffer size multiplier.')
-    parser.add_argument('--train_steps', type = int, default = 100, help = 'Number of training steps.')
+    parser.add_argument('--train_steps', type = int, default = 250, help = 'Number of training steps.')
     parser.add_argument('--train_episodes', type = int, default = 800, help = 'Number of training episodes.')
     parser.add_argument('--gamma', type = float, default = 0.9, help = 'Discount factor for future rewards.')
-    parser.add_argument('--eval_steps', type = int, default = 500, help = 'Number of evaluation steps.')
 
     parser.add_argument('--max_rewards', type = int, default = 1000, help = 'Maximum reward.')
     parser.add_argument('--lr', type = float, default = 0.001, help = 'Learning rate.')

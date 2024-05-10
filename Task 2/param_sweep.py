@@ -64,13 +64,15 @@ def main():
         this_config['lr'] = lr
         this_config['gamma'] = gamma
 
+        torch.manual_seed(42)
+
         env = SkatingRinkEnv(this_config)
         model = DQN(env.state_n, hidden_size, env.actions_n).to(device)
         model_target = DQN(env.state_n, hidden_size, env.actions_n).to(device)
         optimizer = optim.AdamW(model.parameters(), lr = lr)
 
         trainer = Trainer(this_config, env, model, model_target, optimizer)
-        loss, q_step = trainer.train(all_debug = False)
+        episode, _, loss, q_step = trainer.train(all_debug = False)
 
         states = env.dropin(1000)
         states, actions, new_states, rewards, dones = env.eval(model, states).tensors()

@@ -61,10 +61,10 @@ class Trainer:
         self.max_rewards = self.config['max_rewards']
         self.train_episodes = self.config['train_episodes']
         self.tau = self.config['tau']
-        self.q_log = []
 
-    def eps_by_episode(self, episode: int) -> float:
-        return self.eps_end + (self.eps_start - self.eps_end) * numpy.exp(-1. * episode / self.eps_decay)
+    def eps_by_episode(self, part: float) -> float:
+        # return self.eps_end + (self.eps_start - self.eps_end) * numpy.exp(-1. * episode / self.eps_decay)
+        return self.eps_start + (self.eps_end - self.eps_start) * part
 
     @torch.no_grad()
     def choose_action(self, epsilon: float, states: tensor) -> tensor:
@@ -74,7 +74,8 @@ class Trainer:
         explotations = self.model(states).argmax(1)
         return torch.where(probs, explotations, explorations)
 
-    def train_episode(self, epsilon: float, method: int) -> tuple[float, int, int]:
+    def train_episode(self, episode: int, epsilon: float, method: int) -> tuple[float, int, int]:
+        # states = self.env.dropin(self.batch_size, self.env.lose_distance_at(self.train_episodes - episode))
         states = self.env.dropin(self.batch_size)
         q_step_log = torch.zeros(size=(self.train_steps,1))
         total_loss = tensor(.0)
@@ -154,15 +155,36 @@ class Trainer:
         self.model_target.load_state_dict(target_state_dict)
         self.model_target.eval()
 
+    def save_model(self, name, episode = None):
+        config_dict = {'weights': self.model.state_dict(), 'config': self.config}
+        if episode is not None:
+            config_dict['episode'] = episode
+
+        torch.save(config_dict, name)
+
     def train(self, all_debug = True):
         episodes = self.train_episodes
+        best_dones = 0
+        best_episode = 0
+        best_loss = 0
+        best_q_step_log = 0
         for episode in range(1, episodes + 1):
-            eps = self.eps_by_episode(episode)
-            loss, wins, dones, q_step_log = self.train_episode(eps, self.config['method'])
-            self.q_log.append(q_step_log.detach().numpy())
+            eps = self.eps_by_episode(episode / episodes)
+            loss, wins, dones, q_step_log = self.train_episode(episode, eps, self.config)
             reward, done = self.env.eval_single(self.model)
 
-            if all_debug or episode % 100 == 0:
-                print(f"Episode: {episode:-2d}\t{'Yes!' if done and reward > 0 else 'Nope' if done and reward <= 0 else 'Sad!'}\tEps = {eps:.2f}\tWins: {wins:5g}\tFinish: {dones:5g}\tLoss: {int(loss):-9d}")
+            eval_rewards, eval_dones = self.env.eval_many(self.model, 100)
+            if episode > 25 and eval_dones >= 10 and eval_dones >= best_dones:
+                best_dones = eval_dones
+                best_episode = episode
+                best_loss = loss
+                best_q_step_log = q_step_log.detach().item()
 
-        return loss, q_step_log.detach().item()
+                if all_debug:
+                    self.save_model('temp.pth', episode)
+                    print('Best model saved!')
+
+            if all_debug or episode % 100 == 0 or episode == episodes:
+                print(f"Episode: {episode:-2d}\tEps = {eps:.2f}\tWins: {wins:5g}\tFinish: {dones:5g}\tLoss: {int(loss):-9d}\tVD: {eval_dones}")
+
+        return best_episode, best_dones, best_loss, best_q_step_log
