@@ -1,12 +1,12 @@
 import numpy
 import torch
+import matplotlib.pyplot as plt
 
 from SkatingRinkEnv import SkatingRinkEnv
 from ReplayBuffer import ReplayBuffer
 
 from torch import nn, optim, tensor, LongTensor, FloatTensor, BoolTensor
 from typing import Any
-from logger import Logger
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -46,8 +46,6 @@ class Trainer:
 
         self.optimizer = optimizer
         self.loss_fn = nn.MSELoss()
-        
-        # self.logger = logger
 
         self.eps_start = self.config['eps_start']
         self.eps_end = self.config['eps_end']
@@ -63,16 +61,7 @@ class Trainer:
         self.max_rewards = self.config['max_rewards']
         self.train_episodes = self.config['train_episodes']
         self.tau = self.config['tau']
-        self.tau_decay = self.config['tau_decay']
-        
-        self.gamma = self.config['gamma']
-        self.update_freq = self.config['update_freq']
-        self.lr = self.config['lr']
-        self.hidden_size = self.config['hidden_size']
-        
         self.q_log = []
-
-        self.reward_log = []
 
     def eps_by_episode(self, episode: int) -> float:
         return self.eps_end + (self.eps_start - self.eps_end) * numpy.exp(-1. * episode / self.eps_decay)
@@ -107,8 +96,8 @@ class Trainer:
             total_loss += loss
 
             q_step_log[e] = torch.mean(q_step, dim=0)
-            average_q_per_agent = torch.mean(q_step_log, dim=0)
-            
+            if total_dones == self.batch_size:
+                break
             
             # Update target model every m steps
             if e % self.config['update_freq'] == 0:
@@ -116,12 +105,8 @@ class Trainer:
             
             # Decay Tau
             self.tau *= self.config['tau_decay']
-            
-            if total_dones == self.batch_size:
-                break
-            
-            
-        return total_loss, total_wins, total_dones, average_q_per_agent, 
+                
+        return total_loss, total_wins, total_dones, torch.mean(q_step_log, dim=0)
 
     def commit_gradient(self, states, actions, new_states, rewards, dones):
         # Input variables:
@@ -137,20 +122,21 @@ class Trainer:
         # with torch.no_grad(): # needs grad to back propagate
         # Get q values of the target model if Target Network/DDQN is selected, else get q values of original model
 
-        if(self.method == Trainer.DQN):
-            next_q = self.model(new_states).max(axis = 1)[0]
-            expected_q = rewards + gamma * next_q * ~dones
-        elif(self.method == Trainer.TargetNetwork):
-            # Simply evaluate the action of the MAIN network using the TARGET network
-            next_q = self.model_target(new_states).max(axis = 1)[0]
-            expected_q = rewards + gamma * next_q * ~dones
-        elif(self.method == Trainer.DoubleDQN):
-            # For DDQN, MAIN network is used to select action
-            next_model_action = self.model(new_states).max(axis = 1)[1]
+        match self.method:
+            case Trainer.DQN:
+                next_q = self.model(new_states).max(axis = 1)[0]
+                expected_q = rewards + gamma * next_q * ~dones
+            case Trainer.TargetNetwork:
+                # Simply evaluate the action of the MAIN network using the TARGET network
+                next_q = self.model_target(new_states).max(axis = 1)[0]
+                expected_q = rewards + gamma * next_q * ~dones
+            case Trainer.DoubleDQN:
+                # For DDQN, MAIN network is used to select action
+                next_model_action = self.model(new_states).max(axis = 1)[1]
 
-            # TARGET network is used to evaluate the action of the MAIN network
-            next_q =torch.gather(self.model_target(new_states), 1, next_model_action.unsqueeze(1))[~dones]
-            expected_q = rewards + gamma
+                # TARGET network is used to evaluate the action of the MAIN network
+                next_q =torch.gather(self.model_target(new_states), 1, next_model_action.unsqueeze(1))[~dones]
+                expected_q = rewards + gamma
 
         current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
         loss = self.loss_fn(current_q, expected_q)
@@ -168,31 +154,15 @@ class Trainer:
         self.model_target.load_state_dict(target_state_dict)
         self.model_target.eval()
 
-    def train(self):
+    def train(self, all_debug = True):
         episodes = self.train_episodes
         for episode in range(1, episodes + 1):
             eps = self.eps_by_episode(episode)
             loss, wins, dones, q_step_log = self.train_episode(eps, self.config['method'])
-            self.q_log.append(q_step_log.detach().item())
+            self.q_log.append(q_step_log.detach().numpy())
             reward, done = self.env.eval_single(self.model)
-            self.reward_log.append(reward)
-            # ["method", "eps_decay", "tau_decay", "batch_size", "actions_size", "gamma", "update_freq", "lr", "hidden_size", "q_values", "reward"]
-            # self.logger.log({"Q": q_step_log.detach().item(),
-            #                  "Reward": reward})
-            # print(f"Episode: {episode:-2d}\t{'Yes!' if done and reward > 0 else 'Nope' if done and reward <= 0 else 'Sad!'}\tEps = {eps:.2f}\tWins: {wins:5g}\tFinish: {dones:5g}\tLoss: {int(loss):-9d}")
-            # self.plot()
-            
-    def plot(self):
-        return
 
-        plt.figure(1)
-        plt.clf()
-        plt.plot(self.q_log)
-        plt.pause(0.001)
-        plt.title('Training')
-        plt.xlabel('Episodes')
-        plt.ylabel('Average Q')
-        
-        if(len(self.q_log)==self.train_episodes):
-            plt.title('Average Q against Episodes')
-            plt.show()
+            if all_debug or episode % 100 == 0:
+                print(f"Episode: {episode:-2d}\t{'Yes!' if done and reward > 0 else 'Nope' if done and reward <= 0 else 'Sad!'}\tEps = {eps:.2f}\tWins: {wins:5g}\tFinish: {dones:5g}\tLoss: {int(loss):-9d}")
+
+        return loss, q_step_log.detach().item()
