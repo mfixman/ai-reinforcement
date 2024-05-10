@@ -7,12 +7,12 @@
 
 \section{Q Learning}
 
-\subsection{Working Environment and State Transition and Reward Functions}
+\subsection{Working Environment}
 
 \begin{figure}[h]
 	\begin{subfigure}{.49\textwidth}
 		\centering
-		\includegraphics[width=170pt,height=125pt,draft]{snow_puzzle_original.png}
+		\includegraphics[width=170pt,height=125pt]{snow_original.png}
 		\caption{Original puzzle}
 	\end{subfigure}
 	\begin{subfigure}{.49\textwidth}
@@ -29,11 +29,15 @@ In this task we present a solver of \emph{Pokémon Ice Puzzles}, a kind of ice p
 At each turn, the player can do one of four movements: $\{\upa, \downa, \lefta, \righta\}$.
 As the environment is ice, when the user walks in any direction is slips on the ice and keeps going on the same direction until hitting a rock or the edge.
 
+The problem statement for the agent is simple: Arrive at the end goal in the least amount of steps possible. The agent would need to know which action constitutes to the next state that leads it closer to the end point.
+
 \newcommand{\coor}[2]{\left\langle #1, #2 \right\rangle}
 \newcommand{\yx}{\coor{y}{x}}
 \newcommand{\obs}{\mathcal{O}}
 \newcommand{\state}{\mathcal{S}}
 \newcommand{\reward}{\mathcal{R}}
+
+\subsection{State Transition and Reward Functions}
 The state function $\state$, along with the transition and reward functions $\mathcal{T}$ and $\reward$ can be defined as the following, where $\obs_{\yx}$ is true if and only if there is an obstacle on position $\yx$.
 \begin{gather*}
 	\state = \yx \qquad \mathcal{D} \in \left\{ \upa, \downa, \lefta, \righta \right\} \\
@@ -49,7 +53,9 @@ The state function $\state$, along with the transition and reward functions $\ma
 	\end{cases}
 \end{gather*}
 
-\subsection{Q Function}
+In simpler terms, each action the agent makes at a certain point relocates the agent to the last viable open space which is not blocked by the edges of the map or any obstacles. Hence, the states are defined by all the spots that are not occupied by the obstacles or are not edges, while the action space are of the 4 directional functions. It is important to note here that the number of avaiable states are not all squares that are not obstacles or edges, but rather only a select few spaces where the agent can step on when it bumps into the obstacles or edges.
+
+\subsection{Q Function and parameters}
 
 This transition function allows us to define an iterative $Q$ function, which should be used to find the objective $Q^\pi$ function.
 \begin{gather*}
@@ -58,7 +64,7 @@ This transition function allows us to define an iterative $Q$ function, which sh
 \end{gather*}
 
 \newpage{}
-The probability next action $a$ is defined depending on the policy used, where $\pi^k(a \mid s)$ represents the probability of choosing action $a$ with state $s$ at point $k$.
+The probability next action $a$ is defined depending on the policy used, where $\pi^k(a \mid s)$ represents the probability of choosing action $a$ with state $s$ at point $k$. The variables $\alpha$ and $\gamma$ represent the learning rate and the discount rate respectively, where the former addresses how much the agent learns per step, while the latter defines how much the agent places significance on the current rewards or future rewards.
 \begin{gather*}
 	\intertext{\textbf{\textepsilon-Greedy Policy}: choose the best policy with probability $\varepsilon$, randomly otherwise.}
 	\pi^k(a \mid s) = 
@@ -66,9 +72,11 @@ The probability next action $a$ is defined depending on the policy used, where $
 			1 & \text{if } a = \argmax_{a'} (Q^k(s, a')) \\
 			0 & \text{otherwise}
 		\end{cases} \\
-	\intertext{\textbf{Bellman Policy}: choose policy using the softmax of the Q-value}
+	\intertext{\textbf{Boltzmann Policy}: choose policy using the softmax of the Q-value}
 	\pi^k(a \mid s) = \frac{e^{Q^k(s, a)}}{\sum_{a' \in \mathcal{D}}{e^{Q^k(s, a')}}}
 \end{gather*}
+
+The epsilon greedy policy starts exploring the environment followed by exploiting, where the agent begins to use the knowledge gained from exploring and derive the best values it sees fit to carry out the actions that gives it the best rewards based on that knowledge. In that sense, the epsilon greedy policy is more deterministic compared to the Boltzmann policy, which also utilises exploration and exploitation, but during exploitation, rather than carrying out the best values it has learnt through exploration, the Boltzmann policy instead chooses an action with probability derived from the equation above. Because of this, the Epsilon-greedy policy is more likely to converge, while the Boltzmann policy is more likely to make more informed actions in cases where two actions in the current time yield marginally different results, leading to more adaptability in more complex environments.
 
 \subsection{Parameter sweep}
 \label{param_sweep}
@@ -81,7 +89,7 @@ To find the best parameters, we run a parameter sweep on the map in \cref{large_
 		\toprule
 		Hyperparameter & \multicolumn{4}{c}{Values} \\
 		\midrule
-		Policy & \multicolumn{4}{l}{\begin{tabular}{l l}$\varepsilon$-Greedy & Bellman\end{tabular}} \\
+		Policy & \multicolumn{4}{l}{\begin{tabular}{l l}$\varepsilon$-Greedy & Boltzmann\end{tabular}} \\
 		$\alpha$ & 0.1 & 0.5 & 0.7 & 0.9 \\
 		$\gamma$ & 0.9 & 0.99 && \\
 		$\varepsilon$ Decay Rate & 0.75 & 0.9 & 0.99 & \\
@@ -107,9 +115,9 @@ Some interesting results can be found in \cref{param_sweep_interesting}.
 		\textepsilon{}-Greedy & 0.5  & 0.90  & 0.99 & 139 & 16.00 & 31.80  & 97 \\
 		\textepsilon{}-Greedy & 0.9 & 0.90  & 0.90 & 51  & 16.80 & 12.00  & 26 \\
 		\midrule
-		Bellman & 0.2 & 0.90 & 0.75 & 666  & 16.20 &  82.70 &  224 \\
-		Bellman & 0.9 & 0.90 & 0.99 & 126  & 17.40 &  37.30 &   86 \\
-		Bellman & 0.7 & 0.90 & 0.75 & 205  & 17.60 &  48.70 &   58 \\
+		Boltzmann & 0.2 & 0.90 & 0.75 & 666  & 16.20 &  82.70 &  224 \\
+		Boltzmann & 0.9 & 0.90 & 0.99 & 126  & 17.40 &  37.30 &   86 \\
+		Boltzmann & 0.7 & 0.90 & 0.75 & 205  & 17.60 &  48.70 &   58 \\
 		\bottomrule
 	\end{tabular}
 	\caption{Some notable results taken from \appendixA{}.}
@@ -117,18 +125,25 @@ Some interesting results can be found in \cref{param_sweep_interesting}.
 \end{table}
 
 We can observe the following.
-\begin{itemize}
-	\item The \textepsilon{}-Greedy policy converges faster and produces a significantly better result.
-	\item Generally having high $\varepsilon$ Decay represents better results.
-	\item There is a significant correlation between convergence speed and how good the solutions are.
-\end{itemize}
+% \begin{itemize}
+% 	\item The \textepsilon{}-Greedy policy converges faster and produces a significantly better result.
+% 	\item Generally having high $\varepsilon$ Decay represents better results.
+% 	\item There is a significant correlation between convergence speed and how good the solutions are.
+% \end{itemize}
+
+The Epsilon-Greedy policy converges faster, as expected from the hypothesis defined above as the Epsilon-Greedy policy is more deterministic as the agent will always take the actions that contain the highest Q-values. In this sense, the Epsilon-Greedy policy performs better in the ideal scenario that the agent is able to completely learn the environment, meanwhile the Boltzmann policy outperforms the Epsilon-Greedy policy as seen in cases where the agent begins exploiting too early due to low epsilon decay factor, in which case the Boltzmann policy is able to derive a better solution than the Epsilon-Greedy policy as it still considers actions which yield marginally different rewards.
+
+Furthermore, a lower epsilon decay factor generally leads to quicker convergence speeds. This is expected as the epsilon decay factor directly impacts how quickly the agent transitions from exploring to exploiting. For most cases, the agent was never able to determine the best route retrospectively (16) as the agent often has already begun exploiting before the agent fully learns the environment provided. This is especially true with epsilon-greedy policies as explained above. Hence, another observation can be made on the tradeoff between the convergence speed and the quality of the solutions, where lower convergence speed allows the agent to learn the environment more and achieve an optimal solution, while a faster convergence speed prompts better training time at the cost of poorer quality solutions.
+
+Besides that, a larger alpha directly impacts how much the agent takes the learning in that timestep into account. Excessively large alpha values generally do not perform well as the agent often overestimates the Q-values, leading to the agent to overfit towards certain actions that provide rewards in the first few episodes, causing the agent to be unable to optimize the solution in the environment as the agent already thinks it is doing the best solution. Similarly, excessively low alpha values cause the agent to struggle to find the best solutions locally in a reasonable timeframe. In cases where epsilon decay is low, the agent takes over 400 episodes in both policies to achieve what it believes to be the best result.
+
 
 We choose the parameter combination that converges the fastest between the ones that \emph{always} found the best solution; that's marked in \colorbox{YellowGreen}{green}.
 
 \subsection{Analysing this solution}
 The solution found in \cref{param_sweep} takes on average 139 epochs to converge.
 Of those, it takes an average of 31.8 epochs to find a solution, and 97 epochs to find \emph{the best} solution.
-Despite taking significantly longer to converge due to its low learning rate, it always finds a suitable solution.
+Despite taking significantly longer to converge due to its low learning rate, it always finds the optimal solution.
 
 \begin{figure}[H]
 	\centering
@@ -146,11 +161,11 @@ Despite taking significantly longer to converge due to its low learning rate, it
 \begin{figure}[H]
 	\centering
 	\begin{subfigure}{.42\textwidth}
-		\resizebox{\textwidth}{!}{\input{bad_task1_map.tikz}}
+		% \resizebox{\textwidth}{!}{\input{bad_task1_map.tikz}}
 		\caption{After 23 epochs, with a path of length 24.}
 	\end{subfigure}
 	\begin{subfigure}{.42\textwidth}
-		\resizebox{\textwidth}{!}{\input{good_task1_map.tikz}}
+		% \resizebox{\textwidth}{!}{\input{good_task1_map.tikz}}
 		\caption{After 100 epochs, with an ideal path of length 16.}
 	\end{subfigure}
 	\caption{Best action according to each state of the Q-matrix after different amounts of epochs.}
