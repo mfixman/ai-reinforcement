@@ -137,7 +137,7 @@ class Trainer:
 
                 # TARGET network is used to evaluate the action of the MAIN network
                 next_q =torch.gather(self.model_target(new_states), 1, next_model_action.unsqueeze(1))[~dones]
-                expected_q = rewards + gamma
+                expected_q = rewards + gamma * next_q
 
         current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
         loss = self.loss_fn(current_q, expected_q)
@@ -168,6 +168,7 @@ class Trainer:
         best_episode = 0
         best_loss = 0
         best_q_step_log = 0
+        last_print_episode = 0
         for episode in range(1, episodes + 1):
             eps = self.eps_by_episode(episode / episodes)
             loss, wins, dones, q_step_log = self.train_episode(episode, eps, self.config)
@@ -180,9 +181,10 @@ class Trainer:
                 best_loss = loss
                 best_q_step_log = q_step_log.detach().item()
 
-                if all_debug:
-                    self.save_model('temp.pth', episode)
-                    print('Best model saved!')
+            if episode - last_print_episode >= 25:
+                last_print_episode = episode
+                self.save_model(f'dims/data{episode}.pth', episode)
+                print('Best model saved!')
 
             if all_debug or episode % 100 == 0 or episode == episodes:
                 print(f"Episode: {episode:-2d}\tEps = {eps:.2f}\tWins: {wins:5g}\tFinish: {dones:5g}\tLoss: {int(loss):-9d}\tVD: {eval_dones}")

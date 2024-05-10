@@ -5,7 +5,7 @@
 \newcommand{\lefta}{\mathlarger{\leftarrow}}
 \newcommand{\righta}{\mathlarger{\rightarrow}}
 
-\section{Q Learning}
+\section{Pokémon Ice Skating using Q Learning}
 
 \subsection{Working Environment}
 
@@ -63,7 +63,6 @@ This transition function allows us to define an iterative $Q$ function, which sh
 	Q^{k + 1}(s, a) = \alpha \cdot \left( \reward( T( a, s ) ) + \gamma \cdot \max{Q^k(s, a)} \right) - Q^k(s, a)
 \end{gather*}
 
-\newpage{}
 The probability next action $a$ is defined depending on the policy used, where $\pi^k(a \mid s)$ represents the probability of choosing action $a$ with state $s$ at point $k$. The variables $\alpha$ and $\gamma$ represent the learning rate and the discount rate respectively, where the former addresses how much the agent learns per step, while the latter defines how much the agent places significance on the current rewards or future rewards.
 \begin{gather*}
 	\intertext{\textbf{\textepsilon-Greedy Policy}: choose the best policy with probability $\varepsilon$, randomly otherwise.}
