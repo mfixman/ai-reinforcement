@@ -191,9 +191,9 @@ class Trainer:
 
             eval_rewards, eval_dones = self.env.eval_many(self.model, 1000)
             
-            self.reward_mat.append(reward)
-            self.q_mat.append(q_step_log)
-            self.loss_mat.append(loss)
+            # self.reward_mat.append(reward)
+            # self.q_mat.append(q_step_log)
+            # self.loss_mat.append(loss)
             
             # For best parameters added to a csv file to be plotted later
             if(self.out is not None):
