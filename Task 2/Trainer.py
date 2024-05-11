@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import sys
 from SkatingRinkEnv import SkatingRinkEnv
 from ReplayBuffer import ReplayBuffer
+import logging
 
 from torch import nn, optim, tensor, LongTensor, FloatTensor, BoolTensor
 from typing import Any
@@ -199,6 +200,7 @@ class Trainer:
             if all_debug and episode - last_print_episode >= 25:
                 last_print_episode = episode
                 self.save_model(f'dims/data{episode}.pth', episode)
+                logging.info(f'Episode {episode} model saved!')
                 print('Best model saved!')
 
             if all_debug or episode % 25 == 0 or episode == episodes:

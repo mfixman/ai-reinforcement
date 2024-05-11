@@ -8,6 +8,8 @@ from DQN import DQN
 from SkatingRinkEnv import SkatingRinkEnv
 from Trainer import Trainer
 
+import logging
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def parse_args():
@@ -52,10 +54,14 @@ def main():
     model_target = DQN(env.state_n, config['hidden_size'], env.actions_n).to(device)
     optimizer = optim.AdamW(model.parameters(), lr = config['lr'])
 
-    #Training Step
+    logging.basicConfig(
+        level = logging.INFO,
+        format = '[%(asctime)s] %(message)s',
+        datefmt = '%Y-%m-%d %H:%M:%S',
+    )
+
+    logging.info('Starting now')
     Trainer(config, env, model, model_target, optimizer).train()
-    
-    #Evaluation Step
     reward, done = env.eval_single(model)
     if done and reward > 0:
         print('Finished and won :-)')
