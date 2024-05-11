@@ -203,10 +203,10 @@ class Trainer:
 
             if all_debug or episode % 25 == 0 or episode == episodes:
                 if episode == 1:
-                    print('method,hidden_size,lr,gamma,eps_start,eval_rewards,eval_dones,loss,q_step')
+                    print('method,hidden_size,lr,gamma,eps_start,eval_rewards,eval_dones,loss,q_step', flush = True)
 
                 ids = [self.method, self.hidden_size, self.config['lr'], self.config['gamma'], self.config['eps_start']]
                 data = [x.detach().item() for x in [eval_rewards, eval_dones, loss, q_step_log]]
-                print(','.join(str(x) for x in ids + data))
+                print(','.join(str(x) for x in ids + data), flush = True)
 
         return best_episode, best_dones, best_loss, best_q_step_log
