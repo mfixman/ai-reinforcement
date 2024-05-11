@@ -63,7 +63,6 @@ This transition function allows us to define an iterative $Q$ function, which sh
 	Q^{k + 1}(s, a) = \alpha \cdot \left( \reward( T( a, s ) ) + \gamma \cdot \max{Q^k(s, a)} \right) - Q^k(s, a)
 \end{gather*}
 
-\newpage{}
 The probability next action $a$ is defined depending on the policy used, where $\pi^k(a \mid s)$ represents the probability of choosing action $a$ with state $s$ at point $k$. The variables $\alpha$ and $\gamma$ represent the learning rate and the discount rate respectively, where the former addresses how much the agent learns per step, while the latter defines how much the agent places significance on the current rewards or future rewards.
 \begin{gather*}
 	\intertext{\textbf{\textepsilon-Greedy Policy}: choose the best policy with probability $\varepsilon$, randomly otherwise.}
@@ -130,17 +129,23 @@ We can observe the following.
 % 	\item Generally having high $\varepsilon$ Decay represents better results.
 % 	\item There is a significant correlation between convergence speed and how good the solutions are.
 % \end{itemize}
+\subsubsection{Difference in Policies}
+The Epsilon-Greedy policy converges faster, as expected from the hypothesis defined above as the Epsilon-Greedy policy is more deterministic as the agent will always take the actions that contain the highest Q-values.  In this sense, the Epsilon-Greedy policy performs better in the ideal scenario that the agent is able to completely learn the environment, meanwhile the Boltzmann policy outperforms the Epsilon-Greedy policy as seen in cases where the agent begins exploiting too early due to low epsilon decay factor, in which case the Boltzmann policy is able to derive a better solution than the Epsilon-Greedy policy as it still considers actions which yield marginally different rewards.
 
-The Epsilon-Greedy policy converges faster, as expected from the hypothesis defined above as the Epsilon-Greedy policy is more deterministic as the agent will always take the actions that contain the highest Q-values. In this sense, the Epsilon-Greedy policy performs better in the ideal scenario that the agent is able to completely learn the environment, meanwhile the Boltzmann policy outperforms the Epsilon-Greedy policy as seen in cases where the agent begins exploiting too early due to low epsilon decay factor, in which case the Boltzmann policy is able to derive a better solution than the Epsilon-Greedy policy as it still considers actions which yield marginally different rewards.
+\subsubsection{Difference in epsilon decay factor}
+Furthermore, a lower epsilon decay factor generally leads to quicker convergence speeds. This is expected as the epsilon decay factor directly impacts how quickly the agent transitions from exploring to exploiting. 
 
-Furthermore, a lower epsilon decay factor generally leads to quicker convergence speeds. This is expected as the epsilon decay factor directly impacts how quickly the agent transitions from exploring to exploiting. For most cases, the agent was never able to determine the best route retrospectively (16) as the agent often has already begun exploiting before the agent fully learns the environment provided. This is especially true with epsilon-greedy policies as explained above. Hence, another observation can be made on the tradeoff between the convergence speed and the quality of the solutions, where lower convergence speed allows the agent to learn the environment more and achieve an optimal solution, while a faster convergence speed prompts better training time at the cost of poorer quality solutions.
+For most cases, the agent was never able to determine the best route retrospectively (16) as the agent often has already begun exploiting before the agent fully learns the environment provided. This is especially true with epsilon-greedy policies as explained above. 
 
+\subsubsection{Convergence speed vs Solution quality}
+Another observation can be made on the tradeoff between the convergence speed and the quality of the solutions, where lower convergence speed allows the agent to learn the environment more and achieve an optimal solution, while a faster convergence speed prompts better training time at the cost of poorer quality solutions.
+
+\subsubsection{Difference in Alphas}
 Besides that, a larger alpha directly impacts how much the agent takes the learning in that timestep into account. Excessively large alpha values generally do not perform well as the agent often overestimates the Q-values, leading to the agent to overfit towards certain actions that provide rewards in the first few episodes, causing the agent to be unable to optimize the solution in the environment as the agent already thinks it is doing the best solution. Similarly, excessively low alpha values cause the agent to struggle to find the best solutions locally in a reasonable timeframe. In cases where epsilon decay is low, the agent takes over 400 episodes in both policies to achieve what it believes to be the best result.
 
-
-We choose the parameter combination that converges the fastest between the ones that \emph{always} found the best solution; that's marked in \colorbox{YellowGreen}{green}.
-
 \subsection{Analysing this solution}
+We choose the parameter combination that converges the fastest between the ones that \emph{always} found the best solution; that's marked in \colorbox{YellowGreen}{green} in table \ref{param_sweep_interesting}
+
 The solution found in \cref{param_sweep} takes on average 139 epochs to converge.
 Of those, it takes an average of 31.8 epochs to find a solution, and 97 epochs to find \emph{the best} solution.
 Despite taking significantly longer to converge due to its low learning rate, it always finds the optimal solution.

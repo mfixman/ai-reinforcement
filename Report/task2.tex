@@ -12,5 +12,60 @@ Furthermore, the agent now has actions "left", "straight" and "right", rather th
 
 Where V is the linear speed, $\omega$ is the angular speed, a is the action taken by the agent at time t, where 'left' = -1, 'straight' = 0, and 'right' = 1. Through these changes, the complexity of the environment has increased and hence the use of Deep Q Learning is now justified.
 
+\subsection{Evaluation}
+For the environment, we have ran multiple agents concurrently instead of just a singular agent per episode, denoted by the variable \textbf{batch\_size}. A total number of 10000 agents have been used to run the environment. 
+
+For the training phase, the performance of the agent is evaluated based on the win rate, denoted by how many agents were able to clear the environment,  the cummulative reward obtained per episode and the q values obtained in each episode. Furthermore, the agents will be evaluated by how fast they converge to the optimal solution, dictated by the variable \textbf{best episode}.
+
 \subsection{Improvements}
-For the improvements we have implemented two algorithms, mainly the target network method and the Double-DQN method. Both of the methods vary slightly in the implementation algorithm, but may have impacting results if implemented right. Both of the improvement methods introduce a new variable called the target network, which is initialised as an exact copy of the main network otherwise used in the conventional DQN method. The difference lies in the target network method directly evaluating the action made by the main network, while the DDQN method instead evaluates the next action made by the main network in the DQN method. By doing so, the target network helps to stabilise the convergence of the DQN network, while the DDQN method aims to prevent the DQN network from overestimating the Q-values, which may lead to overfitting when exploiting, where the agent thinks that it is doing the best move based on past results, which may be deterimental in stochastic environments where the same state-action pairs do not necessarily contribute to the same next state spaces.
+
+For the improvements we have implemented two algorithms, mainly the target network method and the Double-DQN method. Both of the methods vary slightly in the implementation algorithm, but may have impacting results if implemented right. 
+
+\subsubsection{Target Network}
+The target network method introduces a new variable called the target network. THe target network is initialised as an exact copy of the main network otherwise used in the conventional DQN method, but instead of updating every timestep, the target network is instead updated every certain timesteps, denoted by the variable \textbf{update\_frequency}, hence causing the target network to always lag behind the main network in terms of training.
+
+The target network in this method evaluates the action made by the main network, calculating the best action and its Q-values using the formula:
+
+Evaluating the actions of the main network using the target network aims to increase the stability of the overall training of the agent.
+
+\subsubsection{Double-DQN}
+
+The double-DQN method (DDQN) similarly utilises the target network used by the target method method, but it differs in the sense that instead of getting the best actions and its q-values like the aforementioned two methods, the DDQN method gets the best action through the main network, but calculates the q-values using the target network.
+
+By doing so, the DDQN method aims to mitigate overestimation bias problems from the traditional DQN method, where the agent tends to overestimate the Q-values obtained during training. By doing so, DDQN methods generally tend to converge faster than the DQN method due to the agent not being stuck at repeating suboptimal actions that do not yield the best results but appeared in the first few episodes.
+
+\subsection{Results}
+The following table presents the best 2 results for each method:
+
+\begin{table}[h]
+	\centering
+	\scriptsize
+	\begin{tabular}{r r r r r | r r r r r}
+		\toprule
+              method & hidden size & lr & gamma & eps start & win rate & best episode & best dones & loss & q step \\
+              \midrule
+			DQN & 256 & 0.001 & 0.99 & 0.5 & 1 & 178 & 1000 & 10030k & 7091.87 \\
+               DQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 197 & 1000 & 8306k & 4608.34 \\
+               Target Network & 512 & 0.001 & 0.99 & 0.8 & 1 & 94 & 1000 & 17494k & 6114.58 \\
+               Target Network & 512 & 0.001 & 0.99 & 0.5 & 1 & 124 & 1000 & 12819k & 6709.36 \\
+               DDQN & 512 & 0.001 & 0.99 & 1 & 1 & 101 & 1000 & 22431k & 4119.00 \\
+               DDQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 107 & 1000 & 13977k & 7215.91 \\
+        \bottomrule
+	\end{tabular}
+	\caption{Best 2 results for each method}
+	\label{best_results_t2}
+\end{table}
+
+\subsection{Observations}
+\subsubsection{Convergence speeds}
+
+Observing table \ref{best_results_t2}, both of the Target Network and DDQN method outperforms the DQN method in terms of convergence speeds. This is because both methods were able to mitigate the overestimation of the Q-values compared to the DQN method through the target network.
+
+\subsubsection{Hidden sizes}
+Generally, the hidden size of 512 is preferred over 256. This proves that a higher hidden size allows agents to have more dimensionality in computing the best actions in the environment, leading the agent to be able to accomodate for a higher variety of actions. Care should be taken however, that too high of a hidden size will cause the model to overfit, which fortunately is not the case in this project.
+
+\subsubsection{Gamma values}
+For all cases, gamma = 0.99 is preferred over 0.9. The higher gamma value prioritises future rewards, while the lower gamma values value immediate rewards higher. For the advanced task, despite the complexity of the environment, the environment is still considered deterministic. In which case, since the agent is able to accurately calculate the rewards, higher gamma values allow the agent to learn the environment more thoroughly. However, in stochastic environments, a lower gamma value may be preferred due to the unpredictability of the agent when picking an action.
+
+\subsection{Plots}
+For the following subsection, the q values and the rewards for each episode will be plotted.
