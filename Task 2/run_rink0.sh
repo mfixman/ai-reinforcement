@@ -22,4 +22,5 @@ export WANDB_API_KEY=9692ff12f6990a08e1a75d22ddd651d0f3de3e95
 export https_proxy=http://hpc-proxy00.city.ac.uk:3128
 export TORCH_HOME=/mnt/data/public/torch
 
-python rink.py "$@"
+python rink.py --method DQN --hidden_size 256 --lr 0.001 --gamma 0.99 --eps_start 0.5
+python rink.py --method TargetNetwork --hidden_size 512 --lr 0.001 --gamma 0.99 --eps_start 0.8
