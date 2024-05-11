@@ -117,7 +117,7 @@ class SkatingRinkEnv:
     def eval_many(self, model: nn.Module, batch_size: int) -> tuple[float, int]:
         guys = self.dropin(batch_size)
         states, actions, new_states, rewards, dones = self.eval(model, guys).tensors()
-        return rewards.sum(dims = 0).mean(dtype = torch.float32), dones[-1].sum()
+        return rewards.sum(dim = 0).mean(dtype = torch.float32), dones[-1].sum()
 
     @classmethod
     def zeros(cls, batch_size: int) -> tensor:

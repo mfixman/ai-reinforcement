@@ -88,7 +88,7 @@ The target network in this method evaluates the action made by the main network,
 Evaluating the actions of the main network using the target network aims to increase the stability of the
 overall training of the agent.
 
-\subsection{Double DQN}
+\subsubsection{Double DQN}
 
 The double-DQN method (DDQN) similarly utilises the target network used by the target method method, but it differs in the sense that instead of getting the best actions and its q-values like the aforementioned two methods, the DDQN method gets the best action through the main network, but calculates the q-values using the target network, using the following formula:
 \begin{align*}

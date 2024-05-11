@@ -187,17 +187,9 @@ class Trainer:
         for episode in range(1, episodes + 1):
             eps = self.eps_by_episode(episode / episodes)
             loss, wins, dones, q_step_log = self.train_episode(episode, eps, self.config)
-            reward, done = self.env.eval_single(self.model)
+            # reward, done = self.env.eval_single(self.model)
 
             eval_rewards, eval_dones = self.env.eval_many(self.model, 1000)
-            
-            # self.reward_mat.append(reward)
-            # self.q_mat.append(q_step_log)
-            # self.loss_mat.append(loss)
-            
-            # For best parameters added to a csv file to be plotted later
-            if(self.out is not None):
-                print(f'{self.method},{self.hidden_size},{self.eps_start},{episode},{reward},{q_step_log},{loss}', file = self.out, flush = True)
             
             if episode > 25 and eval_dones >= 10 and eval_dones > best_dones:
                 best_dones = eval_dones
@@ -211,6 +203,11 @@ class Trainer:
                 print('Best model saved!')
 
             if all_debug or episode % 25 == 0 or episode == episodes:
-                print(f"Episode: {episode:-2d}\tEps = {eps:.2f}\tWins: {wins:5g}\tFinish: {dones:5g}\tLoss: {int(loss):-9d}\tVD: {eval_dones}")
+                if episode == 1:
+                    print('method,hidden_size,lr,gamma,eps_start,eval_rewards,eval_dones,loss,q_step')
+
+                ids = [self.method, self.hidden_size, self.config['lr'], self.config['gamma'], self.config['eps_start']]
+                data = [x.detach().item() for x in [eval_rewards, eval_dones, loss, q_step_log]]
+                print(','.join(str(x) for x in ids + data))
 
         return best_episode, best_dones, best_loss, best_q_step_log
