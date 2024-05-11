@@ -27,6 +27,8 @@
 \usepackage[hypertexnames=false,hidelinks]{hyperref}
 \usepackage[noabbrev,nameinlink,capitalize,poorman]{cleveref}
 
+\bibliographystyle{unsrt}
+
 % \renewcommand{\thesection}{Task \arabic{section}}
 \renewcommand{\thesubsection}{\arabic{subsection}}
 
@@ -62,7 +64,7 @@
 	emphstyle=\color{Blue},
 	showstringspaces=false,
 	morekeywords={with, as},
-	literate={✗}{X}1 {●}{o}1 {×}{$\times$}1 {→}{\textrightarrow}1 {↓}{\textdownarrow}1 {←}{\textleftarrow}1 {↑}{\textuparrow}1,
+	literate={✗}{X}1 {●}{o}1 {×}{$\times$}1 {→}{\textrightarrow}1 {↓}{\textdownarrow}1 {←}{\textleftarrow}1 {↑}{\textuparrow}1 {¡}{ }1,
 }
 
 
@@ -107,6 +109,7 @@
 	\input{codes.tex}
 \end{appendices}
 
-% \bibliography{reinforcement_report.bib}
+\clearpage{}
+\bibliography{reinforcement_report.bib}
 
 \end{document}

@@ -41,7 +41,16 @@ class Environment:
 
     policy : str
 
-    def __init__(self, map: list[str], policy: None | str, alpha: float, gamma: float, epsilon: float, decay_rate: float, max_steps: int):
+    def __init__(
+        self,
+        map: list[str],
+        policy: None | str,
+        alpha: float,
+        gamma: float,
+        epsilon: float,
+        decay_rate: float,
+        max_steps: int
+    ):
         self.parseMap(map)
 
         self.Q = numpy.random.rand(self.N, self.M, self.D)
@@ -149,7 +158,11 @@ class Environment:
 
         return steps
 
-    def learn(self, max_epochs: None | int = None, Q_eps: None | float = None) -> tuple[int, list[None | int], list[float]]:
+    def learn(
+        self,
+        max_epochs: None | int = None,
+        Q_eps: None | float = None
+    ) -> tuple[int, list[None | int], list[float]]:
         epoch = 1
 
         diff = float('inf')

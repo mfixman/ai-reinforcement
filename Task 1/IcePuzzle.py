@@ -72,8 +72,18 @@ def main():
     for policy, alpha, gamma, epsilon, decay_rate in combinations:
         props = {k: [] for k in props}
         for r in range(args.repeats):
-            env = Environment(map, policy = policy, alpha = alpha, gamma = gamma, epsilon = epsilon, decay_rate = decay_rate, max_steps = args.max_steps)
-            epochs, steps_per_epoch, diffs_per_epoch, Qmean_per_epoch = env.learn(Q_eps = 1e-12, max_epochs = args.max_epochs)
+            env = Environment(
+                map,
+                policy = policy,
+                alpha = alpha,
+                gamma = gamma,
+                epsilon = epsilon,
+                decay_rate = decay_rate,
+                max_steps = args.max_steps
+            )
+            epochs, steps_per_epoch, diffs_per_epoch, Qmean_per_epoch = env.learn(
+                Q_eps = 1e-12, max_epochs = args.max_epochs
+            )
 
             try:
                 best = min([x for x in steps_per_epoch if x is not None])

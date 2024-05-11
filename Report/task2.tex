@@ -65,8 +65,9 @@ The reward function is defined to maximise the changes of an agent making it to 
 Adding a reward that depends on the distance considerably improved training speed and precision of the Deep Q-network compared to just subtracting a constant each time.
 Even though the results ``should'' be the same, subtracting the distance disincentives the agent from attempting bad solutions.
 
+\newpage{}
 \subsection{Implementation}
-We implement a 3-layer Deep Q-network with hidden size set as a hyperparameter that's trained using an epsilon-greedy policy.
+We implement a 3-layer Deep Q-network with hidden size set as a hyperparameter that's trained using an epsilon-greedy policy whose $\varepsilon$ value goes down linearly from a certain $\varepsilon$-start to 0.
 The data used to train the model is accumulated and later randomly sampled from a large replay buffer.
 
 The original network (target = DQN) produces good solutions if trained in large batch sizes for a large amount of episodes.
@@ -96,29 +97,27 @@ The double-DQN method (DDQN) similarly utilises the target network used by the t
 \end{align*}
 By doing so, the DDQN method aims to mitigate overestimation bias problems from the traditional DQN method, where the agent tends to overestimate the Q-values obtained during training. By doing so, DDQN methods generally tend to converge faster than the DQN method due to the agent not being stuck at repeating suboptimal actions that do not yield the best results but appeared in the first few episodes.
 
-\subsection{Results}
+\subsection{Analysis of Results}
 
-The following table presents the best 2 results for each method:
-
+\Cref{best_results_t2} presents the best 2 results for each method, which can be used to choose candidates.
 \begin{table}[h]
 	\centering
 	\scriptsize
-	\begin{tabular}{r r r r | r r r r r r}
+	\begin{tabular}{r r r r r r | r r r r}
 		\toprule
-  method & hidden size & lr & gamma & eps start & win rate & best episode & loss & q step \\
+		ID & method & hidden size & lr & gamma & $\varepsilon$-start & win rate & best episode & loss & q step \\
   \midrule
-  DQN & 256 & 0.001 & 0.99 & 0.5 & 1 & 178 & 10030k & 7091.87 \\
-  DQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 197 & 8306k & 4608.34 \\
-  Target Network & 512 & 0.001 & 0.99 & 0.8 & 1 & 94 & 17494k & 6114.58 \\
-  Target Network & 512 & 0.001 & 0.99 & 0.5 & 1 & 124 & 12819k & 6709.36 \\
-  DDQN & 512 & 0.001 & 0.99 & 1 & 1 & 101 & 22431k & 4119.00 \\
-  DDQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 107 & 13977k & 7215.91 \\
+		1 & DQN & 256 & 0.001 & 0.99 & 0.5 & 1 & 178 & 10030k & 7091.87 \\
+		2 & DQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 197 & 8306k & 4608.34 \\
+		3 & Target Network & 512 & 0.001 & 0.99 & 0.8 & 1 & 94 & 17494k & 6114.58 \\
+		4 & Target Network & 512 & 0.001 & 0.99 & 0.5 & 1 & 124 & 12819k & 6709.36 \\
+		5 & DDQN & 512 & 0.001 & 0.99 & 1 & 1 & 101 & 22431k & 4119.00 \\
+		6 & DDQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 107 & 13977k & 7215.91 \\
   \bottomrule
   \end{tabular}
-	\caption{Results using double DQN.}
+	\caption{Candidate networks which will be plotted in \cref{candidate_comparison}.}
 	\label{best_results_t2}
 \end{table}
-
 
 \subsubsection{Observations}
 Observing table 3, both of the Target Network and DDQN method outperforms the DQN method in terms of convergence speeds. This is because both methods were able to mitigate the overestimation of the Q-values compared to the DQN method through the target network.
@@ -129,4 +128,43 @@ Generally, the hidden size of 512 is preferred over 256. This proves that a high
 \subsubsection{Gamma values}
 For all cases, gamma = 0.99 is preferred over 0.9. The higher gamma value prioritises future rewards, while the lower gamma values value immediate rewards higher. For the advanced task, despite the complexity of the environment, the environment is still considered deterministic. In which case, since the agent is able to accurately calculate the rewards, higher gamma values allow the agent to learn the environment more thoroughly. However, in stochastic environments, a lower gamma value may be preferred due to the unpredictability of the agent when picking an action.
 
-\subsection{Best Results}
+\subsection{Candidate Comparison}
+\label{candidate_comparison}
+
+We made further experiments to the results in \cref{best_results_t2} to find patterns by running several trials in validation sets of 500 episodes each.
+The trials are averaged and the first 300 episodes are shown, since nothing interesting happens afterwards.
+Note that the validation sets are agents independent of training; their results are never random regardless of the value of $\varepsilon$ at that episode.
+
+\Cref{avg_reward} shows the average reward for each one of the models by epoch.
+As expected, the DQN values in \cref{dqn_avg_reward} are extremely chaotic: while both models converge to having a high reward, the average at every episode seems random.
+This is due to the innate instability of DQN\cite{reinforcement_learning_introduction}.
+
+In contrast, \cref{rest_avg_reward} shows that the average rewards in both target network and DDQN models are much better behaved with all models reaching a perfect score quickly and not moving from there.
+For this model TargetNetwork seems to converge much faster than DDQN.
+
+\begin{figure}[h]
+	\begin{subfigure}{\textwidth}
+		\includegraphics[width=\textwidth]{dqn_reward_size.png}
+		\caption{Models using DQN.}
+		\label{dqn_avg_reward}
+	\end{subfigure} \\[1ex]
+	\begin{subfigure}{\textwidth}
+		\includegraphics[width=\textwidth]{rest_reward_size.png}
+		\caption{Models using DDQN and Target Network.}
+		\label{rest_avg_reward}
+	\end{subfigure}
+	\caption{Reward sizes for the models presented in \cref{best_results_t2}.}
+	\label{avg_reward}
+\end{figure}
+
+As seem in \cref{losses}, the loss of all models goes down in time except for the DDQN with $\varepsilon\text{-start} = 1.0$, whose loss shoots up at around episode 75 and only comes down when the model converges.
+The cause for this effect is difficult to find out, but it's possible that the regular network is stuck on a spot where agents lose almost instantanrously, while 
+\begin{figure}[h]
+	\includegraphics[width=\textwidth]{losses.png}
+	\caption{Average loss of each model at each episode. The reason of the spike in loss in model ID 4 is hard to tell.}
+	\label{losses}
+\end{figure}
+
+\subsection{Qualitative Analysis}
+
+However, what does it mean for a candidate to be better than another?
