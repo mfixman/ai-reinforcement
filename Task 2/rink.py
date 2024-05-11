@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument('--actions_size', type = int, default = 1000, help = 'Number of actions.')
     parser.add_argument('--buf_multiplier', type = int, default = 100, help = 'Buffer size multiplier.')
     parser.add_argument('--train_steps', type = int, default = 250, help = 'Number of training steps.')
-    parser.add_argument('--train_episodes', type = int, default = 800, help = 'Number of training episodes.')
+    parser.add_argument('--train_episodes', type = int, default = 500, help = 'Number of training episodes.')
     parser.add_argument('--gamma', type = float, default = 0.9, help = 'Discount factor for future rewards.')
 
     parser.add_argument('--max_rewards', type = int, default = 1000, help = 'Maximum reward.')
