@@ -199,9 +199,8 @@ class Trainer:
 
             if all_debug and episode - last_print_episode >= 25:
                 last_print_episode = episode
-                self.save_model(f'dims/data{episode}.pth', episode)
-                logging.info(f'Episode {episode} model saved!')
-                print('Best model saved!')
+                # self.save_model(f'dims/data{episode}.pth', episode)
+                logging.info(f'Episode {episode} finished!')
 
             if all_debug or episode % 25 == 0 or episode == episodes:
                 if episode == 1:
