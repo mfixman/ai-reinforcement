@@ -10,6 +10,7 @@ from Environment import Environment
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Blocky Ice Puzzle')
 
+    parser.add_argument('--use-best-params', action = 'store_true', help = 'Use best params, as found in parameter sweep')
     parser.add_argument('--alphas', '--alpha', default = [.5], nargs = '+', type = float, help = 'Learning rate')
     parser.add_argument('--gammas', '--gamma', default = [.9], nargs = '+', type = float, help = 'Discount factor')
     parser.add_argument('--epsilons', '--epsilon', default = [.9], nargs = '+', type = float, help = 'Exploration rate')
@@ -26,8 +27,6 @@ def parse_args():
     parser.add_argument('--print-datas', action = 'store_true', help = 'Print datas')
 
     parser.add_argument('--seed', default = 0, type = int, help = 'Random seed')
-
-    parser.add_argument('--use-best-params', action = 'store_true', help = 'Use best params, as found in parameter sweep')
 
     parser.add_argument('map_file', default = 'snow_map', nargs = '?', help = 'File to be used as input')
 

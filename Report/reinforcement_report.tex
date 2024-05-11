@@ -8,6 +8,7 @@
 \usepackage[top=80pt,bottom=120pt,left=75pt,right=75pt]{geometry}
 \usepackage{microtype}
 \usepackage{graphicx}
+\usepackage{listings}
 \usepackage{subcaption}
 \usepackage{parskip}
 \usepackage{appendix}
@@ -46,6 +47,25 @@
 \setcounter{totalnumber}{10}
 % \renewcommand{\floatpagefraction}{1}
 
+\definecolor{mygray}{rgb}{0.95,0.95,0.95}
+\lstset{
+	language=Python,
+	backgroundcolor=\color{mygray},
+	tabsize=2,
+	keywordstyle=\bfseries\color{OliveGreen},
+	numbers=left,
+	breakatwhitespace=true,
+	captionpos=t,
+	frame=single,
+	basicstyle=\ttfamily\tiny,
+	extendedchars=true,
+	emphstyle=\color{Blue},
+	showstringspaces=false,
+	morekeywords={with, as},
+	literate={✗}{X}1 {●}{o}1 {×}{$\times$}1 {→}{\textrightarrow}1 {↓}{\textdownarrow}1 {←}{\textleftarrow}1 {↑}{\textuparrow}1,
+}
+
+
 \begin{document}
 
 \begin{titlepage}
@@ -83,6 +103,8 @@
 	\input{task1_param_sweep.tex}
 	\clearpage{}
 	\input{task2_param_sweep.tex}
+	\clearpage{}
+	\input{codes.tex}
 \end{appendices}
 
 % \bibliography{reinforcement_report.bib}

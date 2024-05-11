@@ -105,14 +105,14 @@ The following table presents the best 2 results for each method:
 	\scriptsize
 	\begin{tabular}{r r r r | r r r r r r}
 		\toprule
-  method & hidden size & lr & gamma & eps start & win rate & best episode & best dones & loss & q step \\
+  method & hidden size & lr & gamma & eps start & win rate & best episode & loss & q step \\
   \midrule
-  DQN & 256 & 0.001 & 0.99 & 0.5 & 1 & 178 & 1000 & 10030k & 7091.87 \\
-  DQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 197 & 1000 & 8306k & 4608.34 \\
-  Target Network & 512 & 0.001 & 0.99 & 0.8 & 1 & 94 & 1000 & 17494k & 6114.58 \\
-  Target Network & 512 & 0.001 & 0.99 & 0.5 & 1 & 124 & 1000 & 12819k & 6709.36 \\
-  DDQN & 512 & 0.001 & 0.99 & 1 & 1 & 101 & 1000 & 22431k & 4119.00 \\
-  DDQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 107 & 1000 & 13977k & 7215.91 \\
+  DQN & 256 & 0.001 & 0.99 & 0.5 & 1 & 178 & 10030k & 7091.87 \\
+  DQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 197 & 8306k & 4608.34 \\
+  Target Network & 512 & 0.001 & 0.99 & 0.8 & 1 & 94 & 17494k & 6114.58 \\
+  Target Network & 512 & 0.001 & 0.99 & 0.5 & 1 & 124 & 12819k & 6709.36 \\
+  DDQN & 512 & 0.001 & 0.99 & 1 & 1 & 101 & 22431k & 4119.00 \\
+  DDQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 107 & 13977k & 7215.91 \\
   \bottomrule
   \end{tabular}
 	\caption{Results using double DQN.}

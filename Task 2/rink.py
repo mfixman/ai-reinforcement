@@ -15,6 +15,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def parse_args():
     parser = argparse.ArgumentParser(description = "Skating rink")
 
+    parser.add_argument('--method', type = str, default = Trainer.DQN, choices = Trainer.Methods, help = 'Which learning method to use.')
     parser.add_argument('--hidden_size', type = int, default = 64, help = 'Size of the hidden layer.')
     parser.add_argument('--win_distance', type = float, default = 1, help = 'Winning distance.')
     parser.add_argument('--lose_distance', type = float, default = 10., help = 'Losing distance.')
@@ -38,11 +39,10 @@ def parse_args():
     parser.add_argument('--tau_decay', type = float, default = 1.0, help = 'Decay rate of tau.')
     parser.add_argument('--update_freq', type = int, default = 50, help = 'Update frequency for target network.')
 
-    parser.add_argument('--method', type = str, default = Trainer.DQN, choices = Trainer.Methods, help = 'Which learning method to use.')
-
-    parser.add_argument('--output_file', type = str, default = 'ice_skater.pth', help = 'Output file with the weights')
 
     parser.add_argument('--seed', type = int, default = 42, help = 'Random seed')
+
+    parser.add_argument('--output_file', type = str, default = 'ice_skater.pth', help = 'Output file with the weights')
 
     return vars(parser.parse_args())
 
