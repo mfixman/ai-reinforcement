@@ -311,7 +311,8 @@ __pycache__/
 .ipynb_checkpoints/
 
 /Individual Task/
-
+Task 3/wandb/
+Task 3/__pycache__/
 Report/tex/*
 Task 2/wandb/
-Task2/__pycache__/
+Task 2/__pycache__/

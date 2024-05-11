@@ -13,7 +13,7 @@ import logging
 import sys
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+print(device)
 def parse_args():
     parser = argparse.ArgumentParser(description = "Parameter sweep")
 
