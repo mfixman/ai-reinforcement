@@ -1,6 +1,7 @@
 import torch
 import random
 import math
+import numpy as np
 
 def select_action(config, state, env, policy_net, steps_done, device):
     sample = random.random()
@@ -15,3 +16,7 @@ def select_action(config, state, env, policy_net, steps_done, device):
             return policy_net(state).max(1).indices.view(1, 1)
     else:
         return torch.tensor([[env.action_space.sample()]], device=device, dtype=torch.long)
+
+
+def select_action_ppo(output_dim, policy):
+    return np.random.choice(range(output_dim), 1, p=policy)[0]

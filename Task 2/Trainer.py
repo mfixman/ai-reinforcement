@@ -1,7 +1,7 @@
 import numpy
 import torch
 import matplotlib.pyplot as plt
-
+import sys
 from SkatingRinkEnv import SkatingRinkEnv
 from ReplayBuffer import ReplayBuffer
 
@@ -31,7 +31,7 @@ class Trainer:
     train_steps: int
     buf_multiplier: int
 
-    def __init__(self, config : dict[str, Any], env: SkatingRinkEnv, model: nn.Module, model_target: nn.Module, optimizer: optim.Adam):
+    def __init__(self, config : dict[str, Any], env: SkatingRinkEnv, model: nn.Module, model_target: nn.Module, optimizer: optim.Adam, out=sys.stdout):
         if device == 'cpu':
             print('Warning! Using CPU')
 
@@ -61,6 +61,18 @@ class Trainer:
         self.max_rewards = self.config['max_rewards']
         self.train_episodes = self.config['train_episodes']
         self.tau = self.config['tau']
+        
+        self.hidden_size = self.config['hidden_size']
+        self.eps_start = self.config['eps_start']
+        self.reward_mat = []
+        self.q_mat = []
+        self.loss_mat = []
+        
+        if config['output_file'] is not None:
+            self.out = open(config['output_file'], 'a')
+        else:
+            self.out = None
+        
 
     def eps_by_episode(self, part: float) -> float:
         # return self.eps_end + (self.eps_start - self.eps_end) * numpy.exp(-1. * episode / self.eps_decay)
@@ -178,6 +190,15 @@ class Trainer:
             reward, done = self.env.eval_single(self.model)
 
             eval_rewards, eval_dones = self.env.eval_many(self.model, 1000)
+            
+            self.reward_mat.append(reward)
+            self.q_mat.append(q_step_log)
+            self.loss_mat.append(loss)
+            
+            # For best parameters added to a csv file to be plotted later
+            if(self.out is not None):
+                print(f'{self.method},{self.hidden_size},{self.eps_start},{episode},{reward},{q_step_log},{loss}', file = self.out, flush = True)
+            
             if episode > 25 and eval_dones >= 10 and eval_dones > best_dones:
                 best_dones = eval_dones
                 best_episode = episode
