@@ -53,7 +53,7 @@ def main():
 
     out = sys.stdout
     if config['output_file'] is not None:
-        out = open(config['output_file'], 'w')
+        out = open(config['output_file'], 'a')
 
     logging.basicConfig(
         level = logging.INFO,
@@ -61,10 +61,13 @@ def main():
         datefmt = '%Y-%m-%d %H:%M:%S',
     )
 
-    print(f'method,hidden_size,lr,gamma,eps_start,win_rate,best_episode,best_dones,avg_reward,loss,q_step', file = out)
+    print(f'method,hidden_size,lr,gamma,eps_start,win_rate,best_episode,best_dones,avg_reward,loss,q_step', file = out, flush = True)
 
     combinations = product(config['methods'], config['hidden_sizes'], config['lrs'], config['gammas'], config['eps_starts'])
-    for method, hidden_size, lr, gamma, eps_start in combinations:
+    for e, (method, hidden_size, lr, gamma, eps_start) in enumerate(combinations):
+        if e < 8:
+            continue
+
         logging.info(f'Attempting {method} {hidden_size} {lr} {gamma} {eps_start}:')
 
         this_config = config.copy()
@@ -92,7 +95,7 @@ def main():
         win_rate = dones.sum() / dones.shape[0]
         avg_reward = rewards.sum() / rewards.shape[0]
         
-        print(f'{method},{hidden_size},{lr},{gamma},{eps_start},{win_rate:g},{best_episode},{best_dones},{avg_reward:g},{loss},{q_step}', file = out)
+        print(f'{method},{hidden_size},{lr},{gamma},{eps_start},{win_rate:g},{best_episode},{best_dones},{avg_reward:g},{loss},{q_step}', file = out, flush = True)
 
 if __name__ == '__main__':
     main()
