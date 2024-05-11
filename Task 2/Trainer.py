@@ -136,23 +136,22 @@ class Trainer:
         # with torch.no_grad(): # needs grad to back propagate
         # Get q values of the target model if Target Network/DDQN is selected, else get q values of original model
 
-        match self.method:
-            case Trainer.DQN:
-                next_q = self.model(new_states).max(axis = 1)[0]
-                expected_q = rewards + gamma * next_q * ~dones
-            case Trainer.TargetNetwork:
-                # Simply evaluate the action of the MAIN network using the TARGET network
-                next_q = self.model_target(new_states).max(axis = 1)[0]
-                expected_q = rewards + gamma * next_q * ~dones
-            case Trainer.DoubleDQN:
-                # For DDQN, MAIN network is used to select action
-                next_model_action = self.model(new_states).max(axis = 1)[1]
+        if self.method == Trainer.DQN:
+            next_q = self.model(new_states).max(axis = 1)[0]
+            expected_q = rewards + gamma * next_q * ~dones
+        elif self.method ==  Trainer.TargetNetwork:
+            # Simply evaluate the action of the MAIN network using the TARGET network
+            next_q = self.model_target(new_states).max(axis = 1)[0]
+            expected_q = rewards + gamma * next_q * ~dones
+        elif self.method ==  Trainer.DoubleDQN:
+            # For DDQN, MAIN network is used to select action
+            next_model_action = self.model(new_states).max(axis = 1)[1]
 
-                # TARGET network is used to evaluate the action of the MAIN network
-                next_q = torch.gather(self.model_target(new_states), 1, next_model_action.unsqueeze(1)).squeeze(1)
-                expected_q = rewards + gamma * next_q * ~dones
-            case _:
-                raise ValueError('Something else')
+            # TARGET network is used to evaluate the action of the MAIN network
+            next_q = torch.gather(self.model_target(new_states), 1, next_model_action.unsqueeze(1)).squeeze(1)
+            expected_q = rewards + gamma * next_q * ~dones
+        else:
+            raise ValueError('Something else')
 
         current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
         loss = self.loss_fn(current_q, expected_q)
