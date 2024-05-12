@@ -1,1 +1,9 @@
 \section{RLLib}
+For the individual task I will utilise the algorithms obtained from RLLib on the game Pong. The reason I choose Pong is because it is the father of all games and it holds a special place in me. It also is one of the easiest environments to converge \cite{Pong}, and given the time and resource restrictions, I needed an environment that can provide meaningful results in a short time. 
+
+For the environment, I have resized the image to the conventional 84 \times 84 pixels, grayscaled the images 
+
+For the algorithms, I have utilised the Rainbow DQN, which uses all the algorithms learnt in lecture simultaneously. It uses double DQN to mitigate overestimation bias, prioritized experience replay to provide prioritised transitions \cite{hessel2017rainbow}. It also utilises dueling networks, multi-step learning, distributional reinforcement learning and noisy linear layers. Previous research results indicate that rainbow DQN outperforms all the other methods by a significant margin, which is why I have selected it for my research.
+
+Furthermore, I have implemented a grid search for the dueling network and the DDQN methods only due to time constraints. I chose to prioritise on these parameters as intuitively I believe that these affect the performance of the agent the most.
+
