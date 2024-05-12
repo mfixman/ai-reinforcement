@@ -6,7 +6,7 @@
 \renewcommand{\thesection}{Appendix B}
 \section{Results of Parameter Sweep for Task 2}
 \label{param_sweep_result_appendix}
-\begin{table}
+\begin{table}[h]
 	\centering
 	\scriptsize
 	\begin{tabular}{r r r r | r r r r r r}
@@ -43,7 +43,7 @@
 	\label{dqn_results}
 \end{table}
 
-\begin{table}
+\begin{table}[h]
 	\centering
 	\scriptsize
 	\begin{tabular}{r r r r | r r r r r r}
@@ -76,11 +76,11 @@
 			512 & 0.0001 & 0.99 & 0.5 & 0.018 & 37 & 903 & -9820 & 26250k & -798.06 \\
 		\bottomrule
 	\end{tabular}
-	\caption{Results using the other one.}
+	\caption{Results using the Target Network.}
 	\label{targetnetwork_results}
 \end{table}
 
-\begin{table}
+\begin{table}[h]
 	\centering
 	\scriptsize
 	\begin{tabular}{r r r r | r r r r r r}
@@ -113,6 +113,6 @@
 			512 & 0.0001 & 0.99 & 0.5 & 1 & 305 & 1000 & 0 & 47283k & 6504.88 \\
 		\bottomrule
 	\end{tabular}
-	\caption{Best 2 results for each method}
+	\caption{Results using the DDQN.}
 	\label{ddqn_results}
 \end{table}
