@@ -128,7 +128,7 @@ def main():
             candidate_env.printQMatrix(args.latex)
         if args.print_solution:
             steps = candidate_env.printBestMap(args.latex)
-            print(f'¡¡¡¡¡Got there in {steps} steps!!!!!')
+            print(f'Got there in {steps} steps!!!!!')
 
 if __name__ == '__main__':
     main()
