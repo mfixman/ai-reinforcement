@@ -67,16 +67,14 @@ The reward function is defined to maximise the changes of an agent making it to 
 	\end{cases}
 \end{equation*}
 
-Adding a reward that depends on the distance considerably improved training speed and precision of the Deep Q-network compared to just subtracting a constant each time.
-
-Even though the results ``should'' be the same, subtracting the distance disincentives the agent from attempting bad solutions.
+Adding a reward that depends on the distance considerably improved training speed and precision of the Deep Q-network compared to just subtracting a constant each time. Even though the results ``should'' be the same, subtracting the distance disincentives the agent from attempting bad solutions.
 
 \newpage{}
 \subsection{Implementation}
 We implement a 3-layer Deep Q-network with hidden size set as a hyperparameter that's trained using an epsilon-greedy policy whose $\varepsilon$ value goes down linearly from a certain $\varepsilon$-start to 0.
 The data used to train the model is accumulated and later randomly sampled from a large replay buffer. The original network (target = DQN) produces good solutions if trained in large batch sizes for a large amount of episodes.
 
-Frustratingly, it takes a very long time to even make ``passable'' solutions. In order to improve these convergence time, we present two improvements that can be alternatively added to this model.
+% Frustratingly, it takes a very long time to even make ``passable'' solutions. In order to improve these convergence time, we present two improvements that can be alternatively added to this model.
 
 Furthermore, we have deviated slightly in training the agent from the conventional method learnt in labs. Rather than training just 1 agent, we have opted to instead train multiple agents at the same time per episode, denoted by the variable "batch\_size", which is set to 5000. This ensures that our results gained from the training are consistent and not just a one-off case.
 
