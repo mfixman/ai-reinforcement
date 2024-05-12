@@ -1,1 +1,32 @@
+\renewcommand{\thesection}{Advanced Task (Individual)}
 \section{RLLib}
+For the individual task I will utilise the algorithms obtained from RLLib on the game Pong. The reason I choose Pong is because it is the father of all games and it holds a special place in me. It also is one of the easiest environments to converge \cite{Pong}, and given the time and resource restrictions, I needed an environment that can provide meaningful results in a short timeFor the individual task I will utilise the algorithms obtained from RLLib on the game Pong. The reason I choose Pong is because it is the father of all games and it holds a special place in me. It also is one of the easiest environments to converge \cite{Pong}, and given the time and resource restrictions, I needed an environment that can provide meaningful results in a short time.
+
+Pong is an environment where the player plays against a robot enemy to attempt to hit the ball past the opponent to score a point. Both sides can score up to 21 points each, and hence the reward function is set at integers from -21 to 21, where -21 implies the opponent wins 21-0, while the latter implies the user has beat the opponent by a score of 21-0. The agent has actions (Left) and (Right) and (Nothing).
+
+For the environment, I have resized the image to the conventional 84 \times 84 pixels, grayscaled the images and ensure that the images are of zero mean. Furthermore, I have used roll fragments of 4 instead of 1 as the agent needs to know the sequence of transitions rather than a singular image to comprehend the situation at any given time.
+
+For the algorithms, I have utilised the Rainbow DQN, which uses all the algorithms learnt in lecture simultaneously. It uses double DQN to mitigate overestimation bias, prioritized experience replay to provide prioritised transitions \cite{hessel2017rainbow}. It also utilises dueling networks, multi-step learning, distributional reinforcement learning and noisy linear layers. Previous research results indicate that rainbow DQN outperforms all the other methods by a significant margin, which is why I have selected it for my research.
+
+Furthermore, I have implemented a grid search for the dueling network and the DDQN methods only due to time constraints. I chose to prioritise on these parameters as intuitively I believe that these affect the performance of the agent the most. I have ran the environment using these grid search parameters over 2000 episodes each with constant parameters to ensure consistency
+
+\subsection{Results}
+\begin{table}[h]
+	\centering
+	\scriptsize
+	\begin{tabular}{c c c | c c c c c}
+		\toprule
+		ID & DDQN & Dueling & Time(s) & reward & max reward & min reward & average episode length \\
+  \midrule
+		\colorbox{id1}{1} & False & False & 14175.4 & -11.35 & 3 & -19 & 5334.26 \\
+		\colorbox{id2}{2} & True & False & 14347.8 & -13.22 & -2 & -19 & 3778.73 \\
+		\colorbox{id3}{3} & False & True & 16972.2 & -12.16 & -1 & -21 & 3669.67 \\
+		\colorbox{id4}{4} & True & True & 14116 & -11.6 & 8 & -20 & 3668.28 \\
+  \bottomrule
+  \label{Gridsearch Results}
+  \end{tabular}
+  \end{table}
+
+  As observed from \cref{Gridsearch Results}, all agents were observed to be training well, with most agents capable of not losing 21-0 in the bare minimum with only 2000 episodes each trained. On average, having both DDQN and Dueling DQN models see similar results, whereas implementing one and not the other causes the model to perform significantly worse, especially without DDQN.
+  Furthermore, while having both DDQN and Dueling DQN sees a higher reward across the 2000 episodes with 8, compared to having neither resulting in a max reward of 3, the average episode length indicates otherwise that having neither DDQN and Dueling DQN causes the agent to perform significantly better than the other 3 parameter sets, as the episode length of over 5000 indicates that the agent on average, is playing the game longer without terminating or truncating, and the max reward of 8 obtained is likely an outlier.
+  In retrospect, while it may be difficult to conclude that not having DDQN and Dueling DQN is better as the hyperparameters for the DDQN and Dueling DQN are not optimal, one can safely conclude that the rainbow DQN needs either both or neither the two DQN architectures in order to perform well.
