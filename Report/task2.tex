@@ -91,7 +91,7 @@ The target network in this method evaluates the action made by the main network,
 Evaluating the actions of the main network using the target network aims to increase the stability of the overall training of the agent.
 
 \subsubsection{Double DQN}
-The double-DQN method (DDQN) similarly utilises the target network used by the target method method, but it differs in the sense that instead of getting the best actions and its q-values like the aforementioned two methods, the DDQN method gets the best action through the main network, but calculates the q-values using the target network, using the following formula:
+The double-DQN method (DDQN) similarly utilises the target network used by the target method method, but it differs in the sense that instead of getting the best actions and its Q-values like the aforementioned two methods, the DDQN method gets the best action through the main network, but calculates the Q-values using the target network, using the following formula:
 \begin{align*}
     Q^{\text{DDQN}}(s, a ; \theta) = \mathbb{E}_{s' \sim \varepsilon}[r + \gamma Q(s', \underset{a'}{\text{argmax}}\ Q(s', a ; \theta_{\text{target}}) ; \theta)]
 \end{align*}
@@ -153,6 +153,7 @@ For all cases, gamma = 0.99 is preferred over 0.9. The higher gamma value priori
 	\end{subfigure}
 	\caption{Reward sizes for the models presented in \cref{best_results_t2}.}
 	\label{avg_reward}
+	\vspace{-14pt}
 \end{figure}
 
 We made further experiments to the results in \cref{best_results_t2} to find patterns by running several trials in validation sets of 500 episodes each.
@@ -180,13 +181,14 @@ For this environment Target Network seems to converge much faster than DDQN. Thi
 
 \begin{figure}[h]
 	\includegraphics[width=\textwidth]{q_values.png}
-	% \caption{Mean expected Q values of the models per episode.}
+	\caption{Mean expected Q values of the models per episode.}
 	\label{q_values}
+	\vspace{-14pt}
 \end{figure}
 
 The expected Q values at each train, shown in \cref{q_values}, show a good example of the stability of the models: the ones for DDQN are smoother than the ones using TargetNetwork, which are in turn smoother than the ones using DQN, with exceptions to \colorbox{id5}{5}, which is likely due to the initial epsilon, where this particular DDQN is still exploring due to initial epsilon = 1 while the other 5 algorithms have already begun exploiting. The smooth Q values are expected from DDQN first and foremost, and this is true with the other DDQN set, where the agent sees a smooth transition to the maximum achievable Q-values compared to the other two methods.
 
-In conclusion, we can infer from the results alone that the target network provides faster convergence, while the DDQN offers smoother convergence when calculating the q-values and losses, both of which are considered improvements over the regular DQN method.
+In conclusion, we can infer from the results alone that the target network provides faster convergence, while the DDQN offers smoother convergence when calculating the Q-values and losses, both of which are considered improvements over the regular DQN method.
 
 \subsection{Qualitative Analysis}
 

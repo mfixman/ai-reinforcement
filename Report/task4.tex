@@ -5,7 +5,7 @@ For this section we attempt to implement Proximal Policy Optimization (PPO) wher
 
 The PPO algorithm directly modifies the policy instead of the conventional state-action pairs obtained through the DQN methods. It utilises entropy and interactions with the environment to update the best policy for the agent to carry out to best fit the environment.
 
-For the implementation, the code is referenced from the labs and also mildly inspired from \cite{PPO_Github}, the environment used for this implementation is Space Invaders. The environment is modified to provide batches of input determined by batch size, followed by preprocessing techniques such as grayscaling and resizing to dimensions 84 \times 84. 
+For the implementation, the code is referenced from the labs and also mildly inspired from the Atari PPO implementation\cite{ppo_github}, the environment used for this implementation is Space Invaders. The environment is modified to provide batches of input determined by batch size, followed by preprocessing techniques such as grayscaling and resizing to dimensions $84 \times 84$.
 
 To learn the RGB image of the environment, the model is modified from taking discrete observation spaces as input to instead take in images through the addition of convolutional layers, flattened into dense layers to return an output. The output layers meanwhile, are modified to return two outputs, the predicted action determined by a softmax layer, followed by a value output to be calculated in the loss function.
 
