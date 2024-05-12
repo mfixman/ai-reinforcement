@@ -4,9 +4,13 @@
 The environment used for the Basic Task is too basic to implement Deep Q Learning. Instead, we created a more complicated ice rink environment, taking inspiration from the  same concept of the environment used in the Basic Task.
 
 The agent is now located in a circular ice skating rink dojo which contains non-integer locations.
-They are also using real ice skates that turn at different directions.
+They are also using real ice skates that cannot easily control turning velocity.
+Instead, each agent can accelerate or deaccelerate their turning speed at each turn.
+In addition to the turning restrictions, the agent must constantly go forward at a constant speed and cannot stop or slow down at any point.
 
-When skating, the state consists of 4 different floating point values and the state has 3 different actions.
+For reference, \cref{circle_plots} shows the result of one of our models in the environment.
+
+When skating, the state consists of 4 floating point values and the state has 3 different actions.
 
 \begin{center}
 	\begin{minipage}[t]{.48\textwidth}
@@ -32,7 +36,8 @@ When skating, the state consists of 4 different floating point values and the st
 	\end{minipage}
 \end{center}
 
-An agent starts at a random point of the ice dojo, and its objective is to get to the center as fast as possible.
+An agent starts at a random point of the ice dojo facing at a random direction but not turning.
+Its objective is to get to the centre as fast as possible.
 This dojo is finite: if the agent goes far enough, it will fall off the flat earth and the game is terminated.
 
 The state and transitions functions are defined in the following equation.
@@ -53,7 +58,7 @@ The state and transitions functions are defined in the following equation.
 	T(\state, a) = \left< y'(\state, a), x'(\state, a), \varphi'(\state, a), \theta'(\state, a) \right>
 \end{gather*}
 
-The reward function is defined to maximise the changes of an agent making it to the centre by, in addition to giving high scores for winning and low scores for losing, giving it a score depending on the distance to the center.
+The reward function is defined to maximise the changes of an agent making it to the centre by, in addition to giving high scores for winning and low scores for losing, giving it a score depending on the distance to the centre.
 \begin{equation*}
 	\reward(\state) = \begin{cases}
 		\phantom{+}1000 & \text{if } \sqrt{y^2 + x^2} \leq \text{min distance} \\
@@ -120,7 +125,7 @@ By doing so, the DDQN method aims to mitigate overestimation bias problems from 
 \end{table}
 
 \subsubsection{Observations}
-Observing table 3, both of the Target Network and DDQN method outperforms the DQN method in terms of convergence speeds. This is because both methods were able to mitigate the overestimation of the Q-values compared to the DQN method through the target network.
+Observing \cref{best_results_t2}, both of the Target Network and DDQN method outperforms the DQN method in terms of convergence speeds. This is because both methods were able to mitigate the overestimation of the Q-values compared to the DQN method through the target network.
 
 \subsubsection{Hidden sizes}
 Generally, the hidden size of 512 is preferred over 256. This proves that a higher hidden size allows agents to have more dimensionality in computing the best actions in the environment, leading the agent to be able to accomodate for a higher variety of actions. Care should be taken however, that too high of a hidden size will cause the model to overfit, which fortunately is not the case in this project.
@@ -165,6 +170,32 @@ The cause for this effect is difficult to find out, but it's possible that the r
 	\label{losses}
 \end{figure}
 
+\newpage{}
 \subsection{Qualitative Analysis}
 
 However, what does it mean for a candidate to be better than another?
+
+\Cref{circle_plots} shows 4 examples of the model with ID = 1 in \cref{best_results_t2} at different training episodes.
+At each one of these episodes, 10 skaters are thrown in the environment with the objective of reaching the centre in as little time as possible.
+These are validation skaters that use the model alone and are unaffected by $\varepsilon$.
+
+\begin{figure}[H]
+	\begin{subfigure}[t]{.48\textwidth}
+		\includegraphics[width=\textwidth]{circle_images/image_50.png}
+		\caption{State of the learners after 50 episodes. The skaters act without much of a pattern, but there is one that reached the objective in the centre. Luck or intelligence?}
+	\end{subfigure}\hfill{}
+	\begin{subfigure}[t]{.48\textwidth}
+		\includegraphics[width=\textwidth]{circle_images/image_100_alt_2.png}
+		\caption{State of the learners after 100 episodes. Skaters travel in a not-necessarily-straight path to the centre if they are close, or basically random if they are far. Additionally, some agents pass close to the centre but do not turn towards it.}
+	\end{subfigure} \\
+	\begin{subfigure}[t]{.48\textwidth}
+		\includegraphics[width=\textwidth]{circle_images/image_150.png}
+		\caption{State of the learners after 150 episodes. Most skaters reach the centre, even if some of them get desperate their angular velocity at first, affecting their score.}
+	\end{subfigure}\hfill{}
+	\begin{subfigure}[t]{.48\textwidth}
+		\includegraphics[width=\textwidth]{circle_images/image_300.png}
+		\caption{After 300 episodes, the skaters always find the shortest path to the centre regardless of where they start or in which direction they initially face.}
+	\end{subfigure}
+	\caption{Evaluation of ice skaters using DQN with hidden size = 512 (model 1 in \cref{best_results_t2}).}
+	\label{circle_plots}
+\end{figure}
