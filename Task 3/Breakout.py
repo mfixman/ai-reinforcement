@@ -3,7 +3,7 @@ from gymnasium.wrappers import AtariPreprocessing, FrameStack
 import torch
 import numpy as np
 from utils import Atari_Prep
-from Agents import DQN_Agent
+from Agents import PPO_Agent
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -13,7 +13,7 @@ print(device)
 config = dict(
     #Environment Variables
     seed=42,
-    env_name = 'BreakoutDeterministic-v4',
+    env_name = 'SpaceInvaders-v0',
     width = 84,
     height = 84,
     render = False,
@@ -36,6 +36,8 @@ config = dict(
     max_epochs = 200,
     
     update_freq = 20,  #Update frequency for Target Network
+    
+    lamda = 1,
     
     # Plotting variables
     plot_epsilon_random = 69000,
@@ -65,8 +67,8 @@ env = gym.wrappers.FrameStack(env, 4)
 
 
 
-DQN_Agent = DQN_Agent(env, config, device)
-DQN_Agent.train()
+PPO_Agent = PPO_Agent(env, config, device)
+PPO_Agent.train()
 
 
 

@@ -1,15 +1,16 @@
 import torch
 import random
 import math
-from models import Q_model
+from models import PPO
 import numpy as np
 from replay import ReplayBuffer
 import torch.nn as nn
 import matplotlib.pyplot as plt
 
-class DQN_Agent:
+class PPO_Agent:
     def __init__(self, env, config, device, show_result=False):
-        self.filename = 'main_net.pth'
+        self.filename_policy = 'ppo_policy.pth'
+        self.filename_value = 'ppo_value.pth'
         self.config = config
         self.env = env
         observation_space, _ = self.env.reset()
@@ -17,28 +18,33 @@ class DQN_Agent:
         # Initialize model
         self.show_result = show_result
 
-        self.main_net = Q_model(obs_space=observation_space.shape, action_space=action_space, num_filters1=config['num_filters1'], num_filters2=config['num_filters2'], num_filters3=config['num_filters3'], hidden_size1=config['hidden_size'])
-        self.target_net = Q_model(obs_space=observation_space.shape, action_space=action_space, num_filters1=config['num_filters1'], num_filters2=config['num_filters2'], num_filters3=config['num_filters3'], hidden_size1=config['hidden_size'])
+        self.policy_net = PPO(input_dim=observation_space.shape[0], output_dim=action_space)
+        self.value_net = PPO(input_dim=observation_space.shape[0], output_dim=action_space)
+        # self.policy_net = Q_model(obs_space=observation_space.shape, action_space=action_space, num_filters1=config['num_filters1'], num_filters2=config['num_filters2'], num_filters3=config['num_filters3'], hidden_size1=config['hidden_size'])
+        # self.value_net = Q_model(obs_space=observation_space.shape, action_space=action_space, num_filters1=config['num_filters1'], num_filters2=config['num_filters2'], num_filters3=config['num_filters3'], hidden_size1=config['hidden_size'])
         
         try:
-            self.main_net.load_state_dict(torch.load(self.filename))
+            self.policy_net.load_state_dict(torch.load(self.filename_policy))
+            self.value_net.load_state_dict(torch.load(self.filename_value))
             print('Checkpoint Loaded')
         except: 
             print('No checkpoint, starting from scratch')
             pass
         
-        self.copy_target()
-        self.target_net.eval()
         self.device = device
-        self.main_net = self.main_net.to(device)
-        self.target_net = self.target_net.to(device)
+        self.policy_net = self.policy_net.to(device)
+        self.value_net = self.value_net.to(device)
         
         self.render = self.config['render']
         
-        self.optim = torch.optim.Adam(self.main_net.parameters(), lr=self.config['lr'])
+        self.optim_policy = torch.optim.Adam(self.policy_net.parameters(), lr=self.config['lr'])
+        self.optim_value = torch.optim.Adam(self.value_net.parameters(), lr=self.config['lr'])
+        
         self.loss_func = nn.SmoothL1Loss()
         # Parameters for updating
         self.update_freq = config['update_freq']
+        
+        self.lamda = config['lamda']
         
         # Parameters for action selection
         self.eps_start = config['eps_start']
@@ -53,22 +59,14 @@ class DQN_Agent:
         self.score_plot = []
         self.t_plot = []
         
-        
-    def copy_target(self):
-        self.target_net.load_state_dict(self.main_net.state_dict())
-        
     def select_action(self, state, steps_done):
-        sample = random.random()
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
-            math.exp(-1. * steps_done / self.eps_decay)
-        steps_done += 1
-        if sample > eps_threshold:
-            with torch.no_grad():
-                # Picks best action based on model prediction
-                return self.main_net(state).max(1).indices.view(1, 1)
-        else:
-            # Random select
-            return torch.tensor([[self.env.action_space.sample()]], device=self.device, dtype=torch.long)
+        #
+        action_softmax = self.policy_net(state)
+        action_category = torch.distributions.Categorical(action_softmax)
+        action = action_category.sample()
+        
+        return action.item(), action_category[:, action.item()].item()
+    
     def learn(self, frame_counts):
         batch_size = self.config['batch_size']
         if (len(self.replaybuffer.memory) < batch_size):
@@ -102,25 +100,41 @@ class DQN_Agent:
             done = done.float().to(self.device)
             
             
-            sa_values = self.main_net(state).gather(1,action.squeeze(1))
+            # sa_values = self.policy_net(state).gather(1,action.squeeze(1))
             with torch.no_grad():
-                next_state_q[ns_pointers] = self.target_net(next_state).max(1)[0]
+                next_state_q[ns_pointers] = self.value_net(next_state)
+                expected_q = reward + self.gamma * next_state_q * (1-done)
+                advantages = expected_q - self.value_net(state)
                 
-            expected_sa_values = (1-done) * (reward + next_state_q * self.gamma) + (done*reward)
+            action_softmax = self.policy_net(state).gather(1, action)
+            prev_action_softmax = action_softmax.clone().detach()
             
+            action_ratio = action_softmax / prev_action_softmax
+            temp1 = action_ratio * advantages
+            temp2 = torch.clamp(action_ratio, 1-self.eps_end, 1+self.eps_end) * advantages
+            policy_loss = torch.min(temp1, temp2).mean()
+            
+            val_loss = self.loss_func(self.value_net(state), expected_q.detach())
+            
+            loss = policy_loss + self.lamda * val_loss
+            # expected_sa_values = (1-done) * (reward + next_state_q * self.gamma) + (done*reward)
 
-            loss = self.loss_func(sa_values, expected_sa_values.unsqueeze(1))
-            self.optim.zero_grad()
+            self.optim_value.zero_grad()
+            self.optim_policy.zero_grad()
             loss.backward()
+            self.optim_value.step()
+            self.optim_policy.step()
             
-            torch.nn.utils.clip_grad_norm_(self.main_net.parameters(), 100)
+            torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), 100)
             self.optim.step()
             
             
     def train(self):
         print(self.device)
         max_score = 0
-        self.main_net.train()
+        self.policy_net.train()
+        self.value_net.train()
+        
         for epoch in range(self.config['max_epochs']):
             # Reset done parameter (truncated or terminated = done)
             done = False
@@ -131,6 +145,7 @@ class DQN_Agent:
             observation, _ = self.env.reset()
             observation = np.array(observation) / 255.0
             state = torch.from_numpy(observation).float().unsqueeze(0).to(self.device)
+            
             for t in range(self.config['max_steps']):
                 with torch.no_grad():
                     action = self.select_action(state, frame_counts)
@@ -171,10 +186,8 @@ class DQN_Agent:
             print(f'Done, Episode:{epoch}, score={score}')
             if score > max_score:
                 max_score = score
-                torch.save(self.main_net.state_dict(), self.filename)
+                torch.save(self.policy_net.state_dict(), self.filename_policy)
                 print('Checkpoint Saved')
-            if frame_counts % self.update_freq:
-                self.copy_target()
 
     def plot(self, episode_durations, mode):
         plt.figure(1)
