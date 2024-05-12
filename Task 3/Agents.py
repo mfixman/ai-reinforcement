@@ -19,13 +19,13 @@ class PPO_Agent:
         self.show_result = show_result
 
         self.policy_net = PPO(input_dim=observation_space.shape[0], output_dim=action_space)
-        self.value_net = PPO(input_dim=observation_space.shape[0], output_dim=action_space)
+        # self.value_net = PPO(input_dim=observation_space.shape[0], output_dim=action_space)
         # self.policy_net = Q_model(obs_space=observation_space.shape, action_space=action_space, num_filters1=config['num_filters1'], num_filters2=config['num_filters2'], num_filters3=config['num_filters3'], hidden_size1=config['hidden_size'])
         # self.value_net = Q_model(obs_space=observation_space.shape, action_space=action_space, num_filters1=config['num_filters1'], num_filters2=config['num_filters2'], num_filters3=config['num_filters3'], hidden_size1=config['hidden_size'])
         
         try:
             self.policy_net.load_state_dict(torch.load(self.filename_policy))
-            self.value_net.load_state_dict(torch.load(self.filename_value))
+            # self.value_net.load_state_dict(torch.load(self.filename_value))
             print('Checkpoint Loaded')
         except: 
             print('No checkpoint, starting from scratch')
@@ -33,12 +33,12 @@ class PPO_Agent:
         
         self.device = device
         self.policy_net = self.policy_net.to(device)
-        self.value_net = self.value_net.to(device)
+        # self.value_net = self.value_net.to(device)
         
         self.render = self.config['render']
         
         self.optim_policy = torch.optim.Adam(self.policy_net.parameters(), lr=self.config['lr'])
-        self.optim_value = torch.optim.Adam(self.value_net.parameters(), lr=self.config['lr'])
+        # self.optim_value = torch.optim.Adam(self.value_net.parameters(), lr=self.config['lr'])
         
         self.loss_func = nn.SmoothL1Loss()
         # Parameters for updating
@@ -61,11 +61,11 @@ class PPO_Agent:
         
     def select_action(self, state, steps_done):
         #
-        action_softmax = self.policy_net(state)
+        action_softmax, vals = self.policy_net(state)
         action_category = torch.distributions.Categorical(action_softmax)
         action = action_category.sample()
         
-        return action.item(), action_category[:, action.item()].item()
+        return action.item(), action_softmax[:, action.item()].item()
     
     def learn(self, frame_counts):
         batch_size = self.config['batch_size']
@@ -79,7 +79,7 @@ class PPO_Agent:
             state_shape = batch.state[0].shape
             
             state = torch.cat(batch.state)
-            action = torch.cat(batch.action)
+            action = torch.Tensor(batch.action)
             reward = torch.tensor(batch.reward)
             
             ns_pointers = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state))).bool().to(self.device)
@@ -94,19 +94,20 @@ class PPO_Agent:
             # State with size of (batch size, 1, 84, 84)
             # state = state.view(batch_size, -1,state_shape[-2], state_shape[-1]).float().to(self.device)
             state = state.float().to(self.device)
-            action = action.unsqueeze(1).to(self.device)
+            action = action.long().unsqueeze(1).to(self.device)
             reward = reward.float().to(self.device)
             next_state = next_state.float().to(self.device)
             done = done.float().to(self.device)
             
-            
+            action_probs, values = self.policy_net(state)
+            next_action_probs, next_values = self.policy_net(next_state)
             # sa_values = self.policy_net(state).gather(1,action.squeeze(1))
             with torch.no_grad():
-                next_state_q[ns_pointers] = self.value_net(next_state)
+                next_state_q[ns_pointers] = next_values.squeeze()
                 expected_q = reward + self.gamma * next_state_q * (1-done)
-                advantages = expected_q - self.value_net(state)
+                advantages = expected_q - values
                 
-            action_softmax = self.policy_net(state).gather(1, action)
+            action_softmax = action_probs.gather(1, action)
             prev_action_softmax = action_softmax.clone().detach()
             
             action_ratio = action_softmax / prev_action_softmax
@@ -114,26 +115,25 @@ class PPO_Agent:
             temp2 = torch.clamp(action_ratio, 1-self.eps_end, 1+self.eps_end) * advantages
             policy_loss = torch.min(temp1, temp2).mean()
             
-            val_loss = self.loss_func(self.value_net(state), expected_q.detach())
+            val_loss = self.loss_func(values, expected_q.detach())
             
             loss = policy_loss + self.lamda * val_loss
             # expected_sa_values = (1-done) * (reward + next_state_q * self.gamma) + (done*reward)
 
-            self.optim_value.zero_grad()
+            # self.optim_value.zero_grad()
             self.optim_policy.zero_grad()
             loss.backward()
-            self.optim_value.step()
+            # self.optim_value.step()
             self.optim_policy.step()
             
-            torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), 100)
-            self.optim.step()
+            # torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), 100)
             
             
     def train(self):
         print(self.device)
         max_score = 0
         self.policy_net.train()
-        self.value_net.train()
+        # self.value_net.train()
         
         for epoch in range(self.config['max_epochs']):
             # Reset done parameter (truncated or terminated = done)
@@ -148,8 +148,8 @@ class PPO_Agent:
             
             for t in range(self.config['max_steps']):
                 with torch.no_grad():
-                    action = self.select_action(state, frame_counts)
-                next_observation, reward, terminated, truncated, info = self.env.step(action.item())
+                    action, action_val = self.select_action(state, frame_counts)
+                next_observation, reward, terminated, truncated, info = self.env.step(action)
                 next_observation = np.array(next_observation) / 255.0
                 # Render env
                 if self.render:

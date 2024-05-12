@@ -25,17 +25,17 @@ config = dict(
     num_filters3 = 64,
     
     # Training variables
-    lr = int(2.5e-3),
-    gamma = 0.999,
+    lr = int(2.5e-5),
+    gamma = 0.99,
     epsilon = 1.0,
-    eps_start = 1.0,
+    # eps_start = 1.0,
     eps_end = 0.1,
-    eps_decay = 100,
-    batch_size = 4,
+    # eps_decay = 100,
+    batch_size = 64,
     max_steps = 75000000,
-    max_epochs = 200,
+    max_epochs = 2000,
     
-    update_freq = 20,  #Update frequency for Target Network
+    # update_freq = 20,  #Update frequency for Target Network
     
     lamda = 1,
     
