@@ -42,14 +42,14 @@ class PPO_Agent:
         
         self.loss_func = nn.SmoothL1Loss()
         # Parameters for updating
-        self.update_freq = config['update_freq']
+        # self.update_freq = config['update_freq']
         
         self.lamda = config['lamda']
         
         # Parameters for action selection
-        self.eps_start = config['eps_start']
+        # self.eps_start = config['eps_start']
         self.eps_end = config['eps_end']
-        self.eps_decay = config['eps_decay']
+        # self.eps_decay = config['eps_decay']
         
         self.gamma = config['gamma']
         
@@ -105,7 +105,8 @@ class PPO_Agent:
             with torch.no_grad():
                 next_state_q[ns_pointers] = next_values.squeeze()
                 expected_q = reward + self.gamma * next_state_q * (1-done)
-                advantages = expected_q - values
+                advantages = expected_q - values.squeeze()
+                advantages = advantages.unsqueeze(1)
                 
             action_softmax = action_probs.gather(1, action)
             prev_action_softmax = action_softmax.clone().detach()
@@ -115,7 +116,7 @@ class PPO_Agent:
             temp2 = torch.clamp(action_ratio, 1-self.eps_end, 1+self.eps_end) * advantages
             policy_loss = torch.min(temp1, temp2).mean()
             
-            val_loss = self.loss_func(values, expected_q.detach())
+            val_loss = self.loss_func(values, expected_q.detach().unsqueeze(1))
             
             loss = policy_loss + self.lamda * val_loss
             # expected_sa_values = (1-done) * (reward + next_state_q * self.gamma) + (done*reward)
