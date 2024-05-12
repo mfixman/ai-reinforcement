@@ -23,5 +23,5 @@ export https_proxy=http://hpc-proxy00.city.ac.uk:3128
 export TORCH_HOME=/mnt/data/public/torch
 
 
-python rink.py --method DDQN --hidden_size 512 --lr 0.001 --gamma 0.99 --eps_start 0.8
+# python rink.py --method DDQN --hidden_size 512 --lr 0.001 --gamma 0.99 --eps_start 0.8
 python rink.py --method DQN --hidden_size 512 --lr 0.001 --gamma 0.99 --eps_start 0.8
