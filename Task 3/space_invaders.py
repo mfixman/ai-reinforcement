@@ -1,7 +1,7 @@
 import torch
 import ray
 from ray import tune
-from ray.rllib.algorithms.ppo import PPOConfig
+from ray.rllib.algorithms.ppo import PPOConfig, PPO
 from ray.tune.logger import pretty_print
 from itertools import product
 from torch.nn import MaxPool2d
@@ -15,6 +15,8 @@ def parse_args():
 	parser.add_argument('--lrs', type = float, nargs = '+', default = [.001])
 	parser.add_argument('--gammas', type = str, nargs = '+', default = [.99])
 	parser.add_argument('--model-names', type = str, nargs = '+', default = ['cnn'])
+	parser.add_argument('--load-checkpoint', type = str)
+	parser.add_argument('--starting-episode', type = int, default = 1)
 	parser.add_argument('--outfile', type = str)
 	return parser.parse_args()
 
@@ -109,14 +111,18 @@ def main():
 	print(','.join(params + training + metrics), file = out, flush = True)
 	for values in product(args.lrs, args.gammas, args.model_names):
 		lr, gamma, model_name = values
-		model = get_ppo_model(lr, gamma, Models[model_name])
 
-		for episode in range(1, 271):
+		model = get_ppo_model(lr, gamma, Models[model_name])
+		if args.load_checkpoint is not None:
+			model.restore(args.load_checkpoint)
+
+
+		for episode in range(args.starting_episode, 271):
 			if episode % 10 == 1:
 				logging.info(f'Starting episode {episode}')
 
-			if episode % 100 == 1:
-				path = model.save(checkpoint_dir = f'./checkpoints_{model_name}_lr/ep{episode}')
+			if episode % 25 == 1:
+				path = model.save(checkpoint_dir = f'./checkpoints_{model_name}_{lr}/ep{episode}')
 				logging.info(f'Saved checkpoint at {path}')
 
 			pert = [episode]
