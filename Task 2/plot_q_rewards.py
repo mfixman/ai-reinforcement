@@ -63,14 +63,16 @@ def main():
 
     print(f'method,hidden_size,eps_start,episode,rewards,Q_values,loss', file = out, flush = True)
 
-    combinations = product(
+    combinations = (
         [Trainer.DQN, Trainer.DQN, Trainer.TargetNetwork, Trainer.TargetNetwork, Trainer.DoubleDQN, Trainer.DoubleDQN], #methods
         [256, 512, 512, 512, 512, 512], #hidden_sizes
         [0.5, 0.8, 0.8, 0.5, 1.0, 0.8], #eps_starts
     )
     
-    for e, (method, hidden_size, eps_start) in enumerate(combinations):
-
+    for iter in range(len(combinations[0])):
+        method = combinations[0][iter]
+        hidden_size = combinations[1][iter]
+        eps_start = combinations[2][iter]
         logging.info(f'Attempting {method} {hidden_size} {eps_start}:')
 
         this_config = config.copy()
