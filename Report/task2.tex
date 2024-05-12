@@ -8,7 +8,7 @@ They are also using real ice skates that cannot easily control turning velocity.
 Instead, each agent can accelerate or deaccelerate their turning speed at each turn.
 In addition to the turning restrictions, the agent must constantly go forward at a constant speed and cannot stop or slow down at any point.
 
-For reference, \cref{circle_plots} shows the result of one of our models in the environment.
+For reference, \textbf{\cref{circle_plots}} shows the result of one of our models in the environment.
 
 When skating, the state consists of 4 floating point values and the state has 3 different actions.
 
@@ -105,22 +105,28 @@ By doing so, the DDQN method aims to mitigate overestimation bias problems from 
 \subsection{Analysis of Results}
 
 \Cref{best_results_t2} presents the best 2 results for each method, which can be used to choose candidates.
+\definecolor{id1}{rgb}{0.651,0.808,0.890}
+\definecolor{id2}{rgb}{0.122,0.471,0.706}
+\definecolor{id3}{rgb}{0.698,0.875,0.541}
+\definecolor{id4}{rgb}{0.200,0.627,0.173}
+\definecolor{id5}{rgb}{0.984,0.604,0.600}
+\definecolor{id6}{rgb}{0.890,0.102,0.110}
 \begin{table}[h]
 	\centering
 	\scriptsize
-	\begin{tabular}{r r r r r r | r r r r}
+	\begin{tabular}{c c c c c c | c c c c}
 		\toprule
 		ID & method & hidden size & lr & gamma & $\varepsilon$-start & win rate & best episode & loss & q step \\
   \midrule
-		1 & DQN & 256 & 0.001 & 0.99 & 0.5 & 1 & 178 & 10030k & 7091.87 \\
-		2 & DQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 197 & 8306k & 4608.34 \\
-		3 & Target Network & 512 & 0.001 & 0.99 & 0.8 & 1 & 94 & 17494k & 6114.58 \\
-		4 & Target Network & 512 & 0.001 & 0.99 & 0.5 & 1 & 124 & 12819k & 6709.36 \\
-		5 & DDQN & 512 & 0.001 & 0.99 & 1 & 1 & 101 & 22431k & 4119.00 \\
-		6 & DDQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 107 & 13977k & 7215.91 \\
+		\colorbox{id1}{1} & DQN & 256 & 0.001 & 0.99 & 0.5 & 1 & 178 & 10030k & 7091.87 \\
+		\colorbox{id2}{2} & DQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 197 & \phantom{0}8306k & 4608.34 \\
+		\colorbox{id3}{3} & Target Network & 512 & 0.001 & 0.99 & 0.8 & 1 & \phantom{0}94 & 17494k & 6114.58 \\
+		\colorbox{id4}{4} & Target Network & 512 & 0.001 & 0.99 & 0.5 & 1 & 124 & 12819k & 6709.36 \\
+		\colorbox{id5}{5} & Double DQN & 512 & 0.001 & 0.99 & 1 & 1 & 101 & 22431k & 4119.00 \\
+		\colorbox{id6}{6} & Double DQN & 512 & 0.001 & 0.99 & 0.8 & 1 & 107 & 13977k & 7215.91 \\
   \bottomrule
   \end{tabular}
-	\caption{Candidate networks which will be plotted in \cref{candidate_comparison}.}
+	\caption{Candidate networks which will be plotted in \cref{candidate_comparison}, color coded for consistency with the plots.}
 	\label{best_results_t2}
 \end{table}
 
@@ -162,12 +168,20 @@ For this model TargetNetwork seems to converge much faster than DDQN.
 	\label{avg_reward}
 \end{figure}
 
-As seem in \cref{losses}, the loss of all models goes down in time except for the DDQN with $\varepsilon\text{-start} = 1.0$, whose loss shoots up at around episode 75 and only comes down when the model converges.
-The cause for this effect is difficult to find out, but it's possible that the regular network is stuck on a spot where agents lose almost instantanrously, while 
+As seem in \cref{losses}, the loss of all models goes down in time except for the DDQN with $\varepsilon\text{-start} = 1.0$, whose loss shoots up and only comes down when the model converges.
+The cause for this effect is difficult to find out, but it's likely chaos with the target network.
 \begin{figure}[h]
 	\includegraphics[width=\textwidth]{losses.png}
-	\caption{Average loss of each model at each episode. The reason of the spike in loss in model ID 4 is hard to tell.}
+	\caption{Average loss of each model at each episode, with the mysterious loss spike for the DDQN with ID 4.}
 	\label{losses}
+\end{figure}
+
+The expected Q values at each train, shown in \cref{q_values}, show a good example of the stability of the models: the ones for DDQN are smoother than the ones using TargetNetwork, which are smoother than the ones using DQN.
+Interestingly, the target Q value follows the same spike as the loss in \cref{losses} and it's its likely cause.
+\begin{figure}[h]
+	\includegraphics[width=\textwidth]{q_values.png}
+	% \caption{Mean expected Q values of the models per episode.}
+	\label{q_values}
 \end{figure}
 
 \newpage{}
@@ -182,20 +196,20 @@ These are validation skaters that use the model alone and are unaffected by $\va
 \begin{figure}[H]
 	\begin{subfigure}[t]{.48\textwidth}
 		\includegraphics[width=\textwidth]{circle_images/image_50.png}
-		\caption{State of the learners after 50 episodes. The skaters act without much of a pattern, but there is one that reached the objective in the centre. Luck or intelligence?}
+		\caption{State of the learners after \textbf{50 episodes}. The skaters act without much of a pattern, but there is one that reached the objective in the centre. Luck or intelligence?}
 	\end{subfigure}\hfill{}
 	\begin{subfigure}[t]{.48\textwidth}
 		\includegraphics[width=\textwidth]{circle_images/image_100_alt_2.png}
-		\caption{State of the learners after 100 episodes. Skaters travel in a not-necessarily-straight path to the centre if they are close, or basically random if they are far. Additionally, some agents pass close to the centre but do not turn towards it.}
+		\caption{State of the learners after \textbf{100 episodes}. Skaters travel in a not-necessarily-straight path to the centre if they are close, or basically random if they are far. Additionally, some agents pass close to the centre but do not turn towards it.}
 	\end{subfigure} \\
 	\begin{subfigure}[t]{.48\textwidth}
 		\includegraphics[width=\textwidth]{circle_images/image_150.png}
-		\caption{State of the learners after 150 episodes. Most skaters reach the centre, even if some of them get desperate their angular velocity at first, affecting their score.}
+		\caption{State of the learners after \textbf{150 episodes}. Most skaters reach the centre, even if some of them get desperate their angular velocity at first, affecting their score.}
 	\end{subfigure}\hfill{}
 	\begin{subfigure}[t]{.48\textwidth}
 		\includegraphics[width=\textwidth]{circle_images/image_300.png}
-		\caption{After 300 episodes, the skaters always find the shortest path to the centre regardless of where they start or in which direction they initially face.}
+		\caption{After \textbf{300 episodes}, the skaters always find the shortest path to the centre regardless of where they start or in which direction they initially face.}
 	\end{subfigure}
-	\caption{Evaluation of ice skaters using DQN with hidden size = 512 (model 1 in \cref{best_results_t2}).}
+	\caption{Evaluation of ice skaters using DQN with hidden size = 512 (model \colorbox{id1}{1} in \cref{best_results_t2}).}
 	\label{circle_plots}
 \end{figure}
